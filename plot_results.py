@@ -102,8 +102,8 @@ def plot_draw_count_analysis():
     plt.ylabel('Win Rate (%)', fontsize=14)
     plt.grid(True, linestyle='--', alpha=0.7)
     
-    # X軸の設定（19から10まで）
-    plt.xticks(range(10, 20))
+    # X軸の設定（左から19から10まで）
+    plt.xticks(range(19, 9, -1))
     
     # Y軸の範囲を0-100%に設定
     plt.ylim(0, 100)
