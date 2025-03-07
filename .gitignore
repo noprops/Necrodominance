@@ -25,3 +25,6 @@ results/
 # OS specific files
 .DS_Store
 Thumbs.db
+
+# Shell scripts
+deploy_to_git.sh
