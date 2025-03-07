@@ -16,6 +16,9 @@ ENV/
 # Results directory
 results/
 
+# Images directory
+imgs/
+
 # IDE specific files
 .idea/
 .vscode/
