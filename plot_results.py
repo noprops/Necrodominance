@@ -93,8 +93,8 @@ def plot_draw_count_analysis():
     # グラフの設定
     plt.figure(figsize=(12, 8))
     
-    # 折れ線グラフを作成
-    plt.plot(df['draw_count'], df['win_rate'], 'b-o', linewidth=2)
+    # 折れ線グラフを作成（X軸を逆順にするため、X軸の値を明示的に指定）
+    plt.plot(df['draw_count'].values, df['win_rate'].values, 'b-o', linewidth=2)
     
     # グラフのタイトルと軸ラベルを設定
     plt.title('Win Rate by Draw Count', fontsize=16)
@@ -103,7 +103,7 @@ def plot_draw_count_analysis():
     plt.grid(True, linestyle='--', alpha=0.7)
     
     # X軸の設定（左から19から10まで）
-    plt.xticks(range(19, 9, -1))
+    plt.gca().invert_xaxis()  # X軸を反転
     
     # Y軸の範囲を0-100%に設定
     plt.ylim(0, 100)
