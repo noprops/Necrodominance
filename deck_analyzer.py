@@ -166,35 +166,6 @@ class DeckAnalyzer:
         
         return results
     
-    def analyze_draw_counts(self, deck: list[str], deck_name: str, initial_hand: list[str], min_draw: int = 10, max_draw: int = 19, mulligan_until_necro: bool = False, iterations: int = 10000):
-        """
-        1つのデッキに対して、draw_countを変えながら分析を行う
-        
-        Args:
-            deck: デッキ（カード名のリスト）
-            deck_name: デッキ名
-            initial_hand: 初期手札
-            min_draw: 最小ドロー数
-            max_draw: 最大ドロー数
-            mulligan_until_necro: ネクロを唱えられるまでマリガンするかどうか
-            iterations: 各ドロー数でのシミュレーション回数
-            
-        Returns:
-            各draw_countの分析結果を含むリスト。各要素は辞書で、デッキ名とdraw_countごとの統計情報を含む
-        """
-        results = self.run_draw_count_analysis(deck, initial_hand, min_draw, max_draw, mulligan_until_necro, iterations)
-        
-        # 各結果にデッキ名を追加
-        for result in results:
-            result['deck_name'] = deck_name
-        
-        # 結果を表示
-        print(f"\nDraw Count Analysis Results for {deck_name}:")
-        for result in results:
-            print(f"Draw Count: {result['draw_count']}, Win Rate: {result['win_rate']:.1f}%")
-        
-        return results
-    
     def compare_decks(self, decks: list[list[str]], deck_names: list[str], draw_count: int, mulligan_until_necro: bool, iterations: int = 10000):
         results = []
         
@@ -253,9 +224,8 @@ def analyze_draw_counts(analyzer: DeckAnalyzer):
     initial_hand = [GEMSTONE_MINE, DARK_RITUAL, NECRODOMINANCE]
     
     deck = create_deck(deck_path)
-    deck_name = get_filename_without_extension(deck_path)
     
-    results = analyzer.analyze_draw_counts(deck, deck_name, initial_hand, mulligan_until_necro=False)
+    results = analyzer.run_draw_count_analysis(deck, initial_hand, min_draw=10, max_draw=19, iterations=10000)
     
     save_results_to_csv('analyze_draw_counts', results, DEFAULT_PRIORITY_FIELDS)
 
@@ -311,4 +281,5 @@ def compare_decks(analyzer: DeckAnalyzer):
 
 if __name__ == "__main__":
     analyzer = DeckAnalyzer()
-    compare_decks(analyzer)
+    #compare_decks(analyzer)
+    analyze_draw_counts(analyzer)

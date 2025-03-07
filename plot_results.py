@@ -87,7 +87,7 @@ def plot_draw_count_analysis():
     # CSVファイルを読み込む
     df = pd.read_csv(csv_path)
     
-    # ドロー数でソート（降順）
+    # ドロー数でソート（降順）- 左から19~10になるように
     df = df.sort_values('draw_count', ascending=False)
     
     # グラフの設定
