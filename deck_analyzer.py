@@ -189,19 +189,6 @@ class DeckAnalyzer:
         return results
     
     def compare_initial_hands(self, initial_hands: list[list[str]], deck: list[str], draw_count: int = 19, iterations: int = 10000):
-        """
-        複数の初期手札に対して、固定のデッキでrun_multiple_simulationsを実行する
-        
-        Args:
-            initial_hands: 初期手札のリスト（各初期手札はカード名のリスト）
-            deck: デッキ（カード名のリスト）
-            draw_count: ドロー数
-            mulligan_until_necro: ネクロを唱えられるまでマリガンするかどうか
-            iterations: シミュレーション回数
-            
-        Returns:
-            各初期手札の分析結果のリスト。各要素は辞書で、初期手札の内容と統計情報を含む
-        """
         results = []
         
         for initial_hand in initial_hands:
@@ -212,8 +199,11 @@ class DeckAnalyzer:
             
             results.append(stats)
         
+        # win_rateの昇順でソート（最も低いものが先頭に来るように）
+        results.sort(key=lambda x: x['win_rate'])
+        
         # 結果を表示
-        print("\nInitial Hand Comparison Results:")
+        print("\nInitial Hand Comparison Results (sorted by win rate):")
         for result in results:
             print(f"Initial Hand: {result['initial_hand']}, Win Rate: {result['win_rate']:.1f}%")
         
@@ -244,8 +234,8 @@ def compare_initial_hands(analyzer: DeckAnalyzer):
         [GEMSTONE_MINE, DARK_RITUAL, NECRODOMINANCE, VALAKUT_AWAKENING]
     ]
 
-    deck = create_deck('decks/wind4_valakut2_cantor1.txt')
-    results = analyzer.compare_initial_hands(initial_hands, deck, mulligan_until_necro=False)
+    deck = create_deck('decks/wind3_valakut3_cantor1.txt')
+    results = analyzer.compare_initial_hands(initial_hands, deck)
     
     save_results_to_csv('compare_initial_hands', results, DEFAULT_PRIORITY_FIELDS)
 
@@ -282,4 +272,5 @@ def compare_decks(analyzer: DeckAnalyzer):
 if __name__ == "__main__":
     analyzer = DeckAnalyzer()
     #compare_decks(analyzer)
-    analyze_draw_counts(analyzer)
+    #analyze_draw_counts(analyzer)
+    compare_initial_hands(analyzer)
