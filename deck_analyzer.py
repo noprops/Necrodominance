@@ -166,13 +166,13 @@ class DeckAnalyzer:
         
         return results
     
-    def compare_decks_with_varying_draw_counts(self, decks: list[list[str]], deck_names: list[str], initial_hand: list[str], min_draw: int = 10, max_draw: int = 19, mulligan_until_necro: bool = False, iterations: int = 10000):
+    def analyze_draw_counts(self, deck: list[str], deck_name: str, initial_hand: list[str], min_draw: int = 10, max_draw: int = 19, mulligan_until_necro: bool = False, iterations: int = 10000):
         """
-        複数のデッキに対して、各デッキについてdraw_countを変えながら分析を行う
+        1つのデッキに対して、draw_countを変えながら分析を行う
         
         Args:
-            decks: デッキのリスト（各デッキはカード名のリスト）
-            deck_names: デッキ名のリスト
+            deck: デッキ（カード名のリスト）
+            deck_name: デッキ名
             initial_hand: 初期手札
             min_draw: 最小ドロー数
             max_draw: 最大ドロー数
@@ -180,25 +180,20 @@ class DeckAnalyzer:
             iterations: 各ドロー数でのシミュレーション回数
             
         Returns:
-            全デッキの全draw_countの分析結果を含むリスト。各要素は辞書で、デッキ名とdraw_countごとの統計情報を含む
+            各draw_countの分析結果を含むリスト。各要素は辞書で、デッキ名とdraw_countごとの統計情報を含む
         """
-        all_results = []
+        results = self.run_draw_count_analysis(deck, initial_hand, min_draw, max_draw, mulligan_until_necro, iterations)
         
-        for i, deck in enumerate(decks):
-            deck_name = deck_names[i]
-            results = self.run_draw_count_analysis(deck, initial_hand, min_draw, max_draw, mulligan_until_necro, iterations)
-            
-            # 各結果にデッキ名を追加
-            for result in results:
-                result['deck_name'] = deck_name
-                all_results.append(result)
-            
-            # 結果を表示
-            print(f"\nDraw Count Analysis Results for {deck_name}:")
-            for result in results:
-                print(f"Draw Count: {result['draw_count']}, Win Rate: {result['win_rate']:.1f}%")
+        # 各結果にデッキ名を追加
+        for result in results:
+            result['deck_name'] = deck_name
         
-        return all_results
+        # 結果を表示
+        print(f"\nDraw Count Analysis Results for {deck_name}:")
+        for result in results:
+            print(f"Draw Count: {result['draw_count']}, Win Rate: {result['win_rate']:.1f}%")
+        
+        return results
     
     def compare_decks(self, decks: list[list[str]], deck_names: list[str], draw_count: int, mulligan_until_necro: bool, iterations: int = 10000):
         results = []
@@ -253,16 +248,16 @@ class DeckAnalyzer:
         
         return results
 
-def compare_decks_with_varying_draw_counts(analyzer: DeckAnalyzer):
-    deck_paths = ['decks/wind4_valakut2_cantor1.txt', 'decks/wind3_valakut3_cantor1.txt']
+def analyze_draw_counts(analyzer: DeckAnalyzer):
+    deck_path = 'decks/wind3_valakut3_cantor1.txt'
     initial_hand = [GEMSTONE_MINE, DARK_RITUAL, NECRODOMINANCE]
-
-    decks = [create_deck(path) for path in deck_paths]
-    deck_names = [get_filename_without_extension(path) for path in deck_paths]
     
-    results = analyzer.compare_decks_with_varying_draw_counts(decks, deck_names, initial_hand, mulligan_until_necro=False)
+    deck = create_deck(deck_path)
+    deck_name = get_filename_without_extension(deck_path)
     
-    save_results_to_csv('compare_decks_with_varying_draw_counts', results, DEFAULT_PRIORITY_FIELDS)
+    results = analyzer.analyze_draw_counts(deck, deck_name, initial_hand, mulligan_until_necro=False)
+    
+    save_results_to_csv('analyze_draw_counts', results, DEFAULT_PRIORITY_FIELDS)
 
 def compare_initial_hands(analyzer: DeckAnalyzer):
     initial_hands = [
