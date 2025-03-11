@@ -4,6 +4,13 @@ from collections import defaultdict
 from game_state import *
 from deck_utils import get_filename_without_extension, create_deck, save_results_to_csv
 
+DECK_PATHS = [
+    'decks/wind4_valakut2_cantor1_paradise0.txt',
+    'decks/wind4_valakut2_cantor0_paradise1.txt',
+    'decks/wind3_valakut3_cantor1_paradise0.txt',
+    'decks/wind3_valakut3_cantor0_paradise1.txt'
+]
+
 # フィールドの優先順位リスト（基本とマリガン回数ごとの統計情報を含む）
 DEFAULT_PRIORITY_FIELDS = [
     'deck_name', 'initial_hand', 'draw_count', 'total_games', 'win_rate', 'cast_necro_rate', 'win_after_necro_rate',
@@ -209,16 +216,6 @@ class DeckAnalyzer:
         
         return results
 
-def analyze_draw_counts(analyzer: DeckAnalyzer):
-    deck_path = 'decks/wind3_valakut3_cantor1.txt'
-    initial_hand = [GEMSTONE_MINE, DARK_RITUAL, NECRODOMINANCE]
-    
-    deck = create_deck(deck_path)
-    
-    results = analyzer.run_draw_count_analysis(deck, initial_hand, min_draw=10, max_draw=19, iterations=10000)
-    
-    save_results_to_csv('analyze_draw_counts', results, DEFAULT_PRIORITY_FIELDS)
-
 def compare_initial_hands(analyzer: DeckAnalyzer):
     initial_hands = [
         [GEMSTONE_MINE, DARK_RITUAL, NECRODOMINANCE],
@@ -231,7 +228,11 @@ def compare_initial_hands(analyzer: DeckAnalyzer):
         [GEMSTONE_MINE, DARK_RITUAL, NECRODOMINANCE, LOTUS_PETAL],
         [GEMSTONE_MINE, DARK_RITUAL, NECRODOMINANCE, LOTUS_PETAL, LOTUS_PETAL],
         [GEMSTONE_MINE, DARK_RITUAL, NECRODOMINANCE, DARK_RITUAL],
-        [GEMSTONE_MINE, DARK_RITUAL, NECRODOMINANCE, VALAKUT_AWAKENING]
+        [GEMSTONE_MINE, DARK_RITUAL, NECRODOMINANCE, CABAL_RITUAL],
+        [GEMSTONE_MINE, DARK_RITUAL, NECRODOMINANCE, VALAKUT_AWAKENING],
+        [GEMSTONE_MINE, DARK_RITUAL, NECRODOMINANCE, BESEECH_MIRROR],
+        [GEMSTONE_MINE, DARK_RITUAL, NECRODOMINANCE, TENDRILS_OF_AGONY],
+        [GEMSTONE_MINE, DARK_RITUAL, NECRODOMINANCE, CHROME_MOX]
     ]
 
     deck = create_deck('decks/wind3_valakut3_cantor1.txt')
@@ -240,37 +241,41 @@ def compare_initial_hands(analyzer: DeckAnalyzer):
     save_results_to_csv('compare_initial_hands', results, DEFAULT_PRIORITY_FIELDS)
 
 def compare_decks(analyzer: DeckAnalyzer):
-    '''deck_paths = [
-        'decks/wind3_valakut3_cantor1.txt',
-        'decks/wind4_valakut2_cantor1.txt',
-        'decks/wind4_valakut2_cantor0_paradise1.txt',
-        'decks/duress4_chrome0.txt',
-        'decks/duress4_chrome1_summoner3.txt',
-        'decks/duress4_chrome2_summoner2.txt',
-        'decks/duress4_chrome3_summoner3_beseech2.txt',
-        'decks/duress4_chrome3_summoner3_cantor0_beseech3.txt',
-        'decks/duress4_chrome3_summoner3_cantor0_valakut1.txt',
-        'decks/duress4_chrome3_summoner3_cantor0_wind3.txt',
-        'decks/duress4_chrome3_summoner3_wind3_beseech3.txt',
-        'decks/duress4_chrome3_summoner3_wind3_valakut1.txt',
-        'decks/duress4_gemstone0.txt'
-    ]'''
+    decks = [create_deck(path) for path in DECK_PATHS]
+    deck_names = [get_filename_without_extension(path) for path in DECK_PATHS]
+    
+    results = analyzer.compare_decks(decks, deck_names, 19, mulligan_until_necro=True, iterations=1000000)
+    
+    save_results_to_csv('compare_decks', results, DEFAULT_PRIORITY_FIELDS)
 
-    deck_paths = [
+def analyze_draw_counts(analyzer: DeckAnalyzer):
+    # 複数のデッキリストを分析
+    DECK_PATHS = [
         'decks/wind3_valakut3_cantor1.txt',
         'decks/wind4_valakut2_cantor1.txt',
         'decks/wind4_valakut2_cantor0_paradise1.txt'
     ]
-
-    decks = [create_deck(path) for path in deck_paths]
-    deck_names = [get_filename_without_extension(path) for path in deck_paths]
     
-    results = analyzer.compare_decks(decks, deck_names, 19, mulligan_until_necro=True)
+    initial_hand = [GEMSTONE_MINE, DARK_RITUAL, NECRODOMINANCE]
+    all_results = []
     
-    save_results_to_csv('compare_decks', results, DEFAULT_PRIORITY_FIELDS)
+    for deck_path in DECK_PATHS:
+        print(f"\nAnalyzing deck: {deck_path}")
+        deck = create_deck(deck_path)
+        deck_name = get_filename_without_extension(deck_path)
+        
+        # 100,000回のイテレーションで実行
+        results = analyzer.run_draw_count_analysis(deck, initial_hand, min_draw=10, max_draw=19, iterations=100000)
+        
+        # 各結果にデッキ名を追加
+        for result in results:
+            result['deck_name'] = deck_name
+            all_results.append(result)
+    
+    save_results_to_csv('analyze_draw_counts', all_results, DEFAULT_PRIORITY_FIELDS)
 
 if __name__ == "__main__":
     analyzer = DeckAnalyzer()
-    #compare_decks(analyzer)
+    compare_decks(analyzer)
     #analyze_draw_counts(analyzer)
-    compare_initial_hands(analyzer)
+    #compare_initial_hands(analyzer)
