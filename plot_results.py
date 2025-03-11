@@ -115,8 +115,8 @@ def plot_draw_count_analysis():
         plt.plot(deck_data['draw_count'].values, deck_data['win_rate'].values, 
                  f'{color}-{marker}', linewidth=2, label=deck_name)
         
-        # 各データポイントに値を表示（デッキごとに少しずらして表示）
-        offset = i * 0.5  # デッキごとに表示位置をずらす
+        # 各データポイントに値を表示（デッキごとに大きくずらして表示）
+        offset = i * 2.0  # デッキごとに表示位置を大きくずらす
         for _, row in deck_data.iterrows():
             plt.text(row['draw_count'], row['win_rate'] + 1 + offset, 
                      f"{row['win_rate']:.1f}%", 
