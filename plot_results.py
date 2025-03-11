@@ -82,13 +82,13 @@ def plot_mulligan_stats():
         
         # 条件付き勝率を表示（Cast Necroした場合の勝率）
         win_rate = win_rate_data[i]
-        ax.annotate(f'Win Rate: {win_rate:.1f}%',
+        ax.annotate(f'Win Rate After Necro: {win_rate:.1f}%',
                     xy=(x[i], max(height1, height2)),
-                    xytext=(0, 10),  # 10ポイント上
+                    xytext=(0, 20),  # 20ポイント上（より上に表示）
                     textcoords="offset points",
                     ha='center', va='bottom',
                     fontsize=8,
-                    color='red')
+                    color='black')  # 黒色に変更
     
     # グリッドを追加
     ax.grid(True, linestyle='--', alpha=0.7)
