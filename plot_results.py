@@ -20,11 +20,12 @@ def plot_mulligan_stats():
     # CSVファイルを読み込む
     df = pd.read_csv(csv_path)
     
+    deck_name = 'wind3_valakut3_cantor0_paradise1'
     # wind3_valakut3_cantor1の行のデータを抽出
-    deck_data = df[df['deck_name'] == 'wind3_valakut3_cantor1']
+    deck_data = df[df['deck_name'] == deck_name]
     
     if deck_data.empty:
-        print("Error: No data found for wind3_valakut3_cantor1")
+        print(f"Error: No data found for {deck_name}")
         return
     
     # 必要なデータを抽出
@@ -45,7 +46,7 @@ def plot_mulligan_stats():
     rects2 = ax.bar(x + width/2, cast_necro_data, width, label='Cast Necro')
     
     # グラフのタイトルと軸ラベルを設定
-    ax.set_title('Mulligan Statistics for wind3_valakut3_cantor1', fontsize=16)
+    ax.set_title(f'Mulligan Statistics for {deck_name}', fontsize=16)
     ax.set_xlabel('Mulligan Count', fontsize=14)
     ax.set_ylabel('Count', fontsize=14)
     ax.set_xticks(x)
@@ -78,6 +79,7 @@ def plot_mulligan_stats():
 def plot_draw_count_analysis():
     """
     results/analyze_draw_counts.csvからドロー数ごとの勝率をグラフ化する関数
+    複数のデッキに対して折れ線グラフを作成する
     """
     csv_path = 'results/analyze_draw_counts.csv'
     if not os.path.exists(csv_path):
@@ -87,17 +89,41 @@ def plot_draw_count_analysis():
     # CSVファイルを読み込む
     df = pd.read_csv(csv_path)
     
-    # ドロー数でソート（降順）- 左から19~10になるように
-    df = df.sort_values('draw_count', ascending=False)
+    # デッキ名でグループ化
+    deck_names = df['deck_name'].unique()
     
     # グラフの設定
     plt.figure(figsize=(12, 8))
     
-    # 折れ線グラフを作成（X軸を逆順にするため、X軸の値を明示的に指定）
-    plt.plot(df['draw_count'].values, df['win_rate'].values, 'b-o', linewidth=2)
+    # 色のリスト
+    colors = ['b', 'r', 'g', 'c', 'm', 'y', 'k']
+    markers = ['o', 's', '^', 'D', 'v', '<', '>']
+    
+    # 各デッキごとに折れ線グラフを作成
+    for i, deck_name in enumerate(deck_names):
+        # デッキのデータを抽出
+        deck_data = df[df['deck_name'] == deck_name]
+        
+        # ドロー数でソート（降順）- 左から19~10になるように
+        deck_data = deck_data.sort_values('draw_count', ascending=False)
+        
+        # 色とマーカーを選択（リストの範囲を超えないようにインデックスを調整）
+        color = colors[i % len(colors)]
+        marker = markers[i % len(markers)]
+        
+        # 折れ線グラフを作成
+        plt.plot(deck_data['draw_count'].values, deck_data['win_rate'].values, 
+                 f'{color}-{marker}', linewidth=2, label=deck_name)
+        
+        # 各データポイントに値を表示（デッキごとに少しずらして表示）
+        offset = i * 0.5  # デッキごとに表示位置をずらす
+        for _, row in deck_data.iterrows():
+            plt.text(row['draw_count'], row['win_rate'] + 1 + offset, 
+                     f"{row['win_rate']:.1f}%", 
+                     ha='center', va='bottom', fontweight='bold', color=color)
     
     # グラフのタイトルと軸ラベルを設定
-    plt.title('Win Rate by Draw Count', fontsize=16)
+    plt.title('Win Rate by Draw Count for Multiple Decks', fontsize=16)
     plt.xlabel('Draw Count', fontsize=14)
     plt.ylabel('Win Rate (%)', fontsize=14)
     plt.grid(True, linestyle='--', alpha=0.7)
@@ -108,10 +134,8 @@ def plot_draw_count_analysis():
     # Y軸の範囲を0-100%に設定
     plt.ylim(0, 100)
     
-    # 各データポイントに値を表示
-    for i, row in df.iterrows():
-        plt.text(row['draw_count'], row['win_rate'] + 1, f"{row['win_rate']:.1f}%", 
-                 ha='center', va='bottom', fontweight='bold')
+    # 凡例を追加
+    plt.legend(fontsize=12)
     
     # グラフを保存
     plt.tight_layout()

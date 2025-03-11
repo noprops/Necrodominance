@@ -249,13 +249,6 @@ def compare_decks(analyzer: DeckAnalyzer):
     save_results_to_csv('compare_decks', results, DEFAULT_PRIORITY_FIELDS)
 
 def analyze_draw_counts(analyzer: DeckAnalyzer):
-    # 複数のデッキリストを分析
-    DECK_PATHS = [
-        'decks/wind3_valakut3_cantor1.txt',
-        'decks/wind4_valakut2_cantor1.txt',
-        'decks/wind4_valakut2_cantor0_paradise1.txt'
-    ]
-    
     initial_hand = [GEMSTONE_MINE, DARK_RITUAL, NECRODOMINANCE]
     all_results = []
     

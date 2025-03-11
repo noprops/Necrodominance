@@ -1,6 +1,6 @@
 4 Gemstone Mine
 4 Vault of Whispers
-3 Chrome Mox
+1 Chrome Mox
 4 Lotus Petal
 4 Simian Spirit Guide
 4 Elvish Spirit Guide
@@ -11,8 +11,8 @@
 4 Dark Ritual
 4 Cabal Ritual
 4 Necrodominance
-2 Beseech the Mirror
-4 Borne Upon a Wind
-2 Valakut Awakening
+4 Beseech the Mirror
+3 Borne Upon a Wind
+3 Valakut Awakening
 1 Tendrils of Agony
 4 Duress
