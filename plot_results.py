@@ -11,6 +11,7 @@ if not os.path.exists('imgs'):
 def plot_mulligan_stats():
     """
     results/compare_decks.csvからマリガン統計をグラフ化する関数
+    縦軸はマリガン回数ごとのネクロを唱えた確率（%）
     """
     csv_path = 'results/compare_decks.csv'
     if not os.path.exists(csv_path):
@@ -21,7 +22,7 @@ def plot_mulligan_stats():
     df = pd.read_csv(csv_path)
     
     deck_name = 'wind3_valakut3_cantor0_paradise1'
-    # wind3_valakut3_cantor1の行のデータを抽出
+    # 指定したデッキの行のデータを抽出
     deck_data = df[df['deck_name'] == deck_name]
     
     if deck_data.empty:
@@ -30,8 +31,11 @@ def plot_mulligan_stats():
     
     # 必要なデータを抽出
     mulligan_counts = range(5)  # 0から4までのマリガン回数
-    wins_data = [deck_data[f'wins_mull{i}'].values[0] for i in mulligan_counts]
-    cast_necro_data = [deck_data[f'cast_necro_mull{i}'].values[0] for i in mulligan_counts]
+    total_games = deck_data['total_games'].values[0]  # 総ゲーム数
+    
+    # 各マリガン回数ごとのデータを確率に変換
+    wins_data = [deck_data[f'wins_mull{i}'].values[0] / total_games * 100 for i in mulligan_counts]
+    cast_necro_data = [deck_data[f'cast_necro_mull{i}'].values[0] / total_games * 100 for i in mulligan_counts]
     win_rate_data = [deck_data[f'win_rate_mull{i}'].values[0] for i in mulligan_counts]
     
     # グラフの設定
@@ -42,28 +46,49 @@ def plot_mulligan_stats():
     width = 0.35  # バーの幅
     
     # 棒グラフを作成
-    rects1 = ax.bar(x - width/2, wins_data, width, label='Wins')
-    rects2 = ax.bar(x + width/2, cast_necro_data, width, label='Cast Necro')
+    rects1 = ax.bar(x - width/2, wins_data, width, label='Wins (%)')
+    rects2 = ax.bar(x + width/2, cast_necro_data, width, label='Cast Necro (%)')
     
     # グラフのタイトルと軸ラベルを設定
     ax.set_title(f'Mulligan Statistics for {deck_name}', fontsize=16)
     ax.set_xlabel('Mulligan Count', fontsize=14)
-    ax.set_ylabel('Count', fontsize=14)
+    ax.set_ylabel('Percentage of Total Games (%)', fontsize=14)
     ax.set_xticks(x)
     ax.set_xticklabels(mulligan_counts)
     ax.legend()
     
-    # 勝率を棒グラフの上に表示
+    # Y軸の範囲を0-100%に設定
+    ax.set_ylim(0, 100)
+    
+    # 各棒グラフの上に値を表示
     for i, (rect1, rect2) in enumerate(zip(rects1, rects2)):
-        # 高い方の棒の上に表示
-        height = max(rect1.get_height(), rect2.get_height())
-        win_rate = win_rate_data[i]
-        ax.annotate(f'{win_rate:.1f}%',
-                    xy=(rect1.get_x() + rect1.get_width() / 2, height),
+        # Wins の値を表示
+        height1 = rect1.get_height()
+        ax.annotate(f'{height1:.1f}%',
+                    xy=(rect1.get_x() + rect1.get_width() / 2, height1),
                     xytext=(0, 3),  # 3ポイント上
                     textcoords="offset points",
                     ha='center', va='bottom',
-                    fontsize=12)
+                    fontsize=10)
+        
+        # Cast Necro の値を表示
+        height2 = rect2.get_height()
+        ax.annotate(f'{height2:.1f}%',
+                    xy=(rect2.get_x() + rect2.get_width() / 2, height2),
+                    xytext=(0, 3),  # 3ポイント上
+                    textcoords="offset points",
+                    ha='center', va='bottom',
+                    fontsize=10)
+        
+        # 条件付き勝率を表示（Cast Necroした場合の勝率）
+        win_rate = win_rate_data[i]
+        ax.annotate(f'Win Rate: {win_rate:.1f}%',
+                    xy=(x[i], max(height1, height2)),
+                    xytext=(0, 10),  # 10ポイント上
+                    textcoords="offset points",
+                    ha='center', va='bottom',
+                    fontsize=8,
+                    color='red')
     
     # グリッドを追加
     ax.grid(True, linestyle='--', alpha=0.7)
