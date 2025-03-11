@@ -276,6 +276,6 @@ def analyze_draw_counts(analyzer: DeckAnalyzer):
 
 if __name__ == "__main__":
     analyzer = DeckAnalyzer()
-    compare_decks(analyzer)
-    #analyze_draw_counts(analyzer)
+    #compare_decks(analyzer)
+    analyze_draw_counts(analyzer)
     #compare_initial_hands(analyzer)
