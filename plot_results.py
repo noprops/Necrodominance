@@ -57,8 +57,8 @@ def plot_mulligan_stats():
     ax.set_xticklabels(mulligan_counts)
     ax.legend()
     
-    # Y軸の範囲を0-100%に設定
-    ax.set_ylim(0, 100)
+    # Y軸の範囲を0-60%に設定（データがより見やすくなるように）
+    ax.set_ylim(0, 60)
     
     # 各棒グラフの上に値を表示
     for i, (rect1, rect2) in enumerate(zip(rects1, rects2)):
