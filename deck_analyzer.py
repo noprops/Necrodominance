@@ -286,7 +286,6 @@ def compare_chancellor_decks(analyzer: DeckAnalyzer):
     
     # 抜くカードのパターンを定義
     removal_patterns = [
-        # 抜くカード4枚
         [CHROME_MOX] * 4,
         [CHROME_MOX] * 3 + [SUMMONERS_PACT] * 1,
         [CHROME_MOX] * 2 + [SUMMONERS_PACT] * 2,
@@ -343,6 +342,14 @@ def compare_chancellor_decks(analyzer: DeckAnalyzer):
     
     # 比較を実行
     results = analyzer.compare_decks(decks, deck_names, 19, mulligan_until_necro=True, iterations=1000000)
+    
+    # win_rateの昇順でソート（最も低いものが先頭に来るように）
+    results.sort(key=lambda x: x['win_rate'])
+    
+    # ソート後の結果を表示
+    print("\nDeck Comparison Results (sorted by win rate):")
+    for result in results:
+        print(f"Deck: {result['deck_name']}, Win Rate: {result['win_rate']:.1f}%")
     
     # 結果をCSVに保存
     save_results_to_csv('compare_chancellor_decks', results, DEFAULT_PRIORITY_FIELDS)
