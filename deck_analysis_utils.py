@@ -202,16 +202,16 @@ def compare_chancellor_decks(analyzer: DeckAnalyzer):
     
     return results
 
-def compare_keep_cards(analyzer: DeckAnalyzer, initial_hand: list[str] = None, deck_path: str = 'decks/wind3_valakut3_cantor0_paradise1.txt', draw_count: int = 19, iterations: int = 100000):
+def compare_keep_cards_for_hand(analyzer: DeckAnalyzer, initial_hand: list[str], deck_path: str = 'decks/wind3_valakut3_cantor0_paradise1.txt', draw_count: int = 19, iterations: int = 100000):
     """
-    キープするカードを比較する関数
+    特定の初期手札に対してキープするカードを比較する関数
     
     初期手札からGemstone Mine, Dark Ritual, Necrodominanceの3枚を除いた残りのカードについて、
     各カードを1枚だけ手札に残し、他をデッキボトムに送る戦略を比較します。
     
     Args:
         analyzer: DeckAnalyzerインスタンス
-        initial_hand: 初期手札（デフォルトはNone、指定されない場合は関数内で定義）
+        initial_hand: 初期手札
         deck_path: デッキファイルのパス
         draw_count: ドロー数
         iterations: シミュレーション回数
@@ -219,13 +219,6 @@ def compare_keep_cards(analyzer: DeckAnalyzer, initial_hand: list[str] = None, d
     Returns:
         各戦略の結果のリスト
     """
-    # 初期手札が指定されていない場合はデフォルト値を使用
-    if initial_hand is None:
-        initial_hand = [
-            GEMSTONE_MINE, DARK_RITUAL, NECRODOMINANCE,
-            LOTUS_PETAL, BORNE_UPON_WIND, MANAMORPHOSE, VALAKUT_AWAKENING
-        ]
-    
     # デッキを読み込む
     deck = create_deck(deck_path)
     
@@ -239,12 +232,19 @@ def compare_keep_cards(analyzer: DeckAnalyzer, initial_hand: list[str] = None, d
     # ユニークなカードのセットを作成
     unique_cards = set(remaining_cards)
     
+    # 初期手札の内容を文字列化してファイル名に使用
+    hand_str = '_'.join([card.split(' ')[0] for card in initial_hand if card not in core_cards])
+    if len(hand_str) > 50:  # ファイル名が長すぎる場合は短くする
+        hand_str = hand_str[:50]
+    
+    print(f"\nAnalyzing initial hand: {', '.join(initial_hand)}")
+    
     # 各カードを1枚だけ手札に残す戦略をループ
     for keep_card in unique_cards:
         # デッキボトムに送るカードリストを作成
         bottom_list = [card for card in remaining_cards if card != keep_card]
         
-        print(f"\nTesting strategy: Keep {keep_card}, Bottom: {', '.join(bottom_list)}")
+        print(f"Testing strategy: Keep {keep_card}, Bottom: {', '.join(bottom_list)}")
         
         # シミュレーション実行
         stats = analyzer.run_multiple_simulations_with_initial_hand(deck, initial_hand, bottom_list, draw_count, iterations)
@@ -252,18 +252,20 @@ def compare_keep_cards(analyzer: DeckAnalyzer, initial_hand: list[str] = None, d
         # 手札に残したカードをラベル付け
         stats['kept_card'] = keep_card
         stats['bottom_cards'] = ', '.join(bottom_list)
+        stats['initial_hand_str'] = ', '.join(initial_hand)
         
         results.append(stats)
     
     # すべてのカードをデッキボトムに送る戦略も追加
     bottom_list = remaining_cards.copy()
-    print(f"\nTesting strategy: Keep None, Bottom: {', '.join(bottom_list)}")
+    print(f"Testing strategy: Keep None, Bottom: {', '.join(bottom_list)}")
     stats = analyzer.run_multiple_simulations_with_initial_hand(deck, initial_hand, bottom_list, draw_count, iterations)
     stats['kept_card'] = 'None'
     stats['bottom_cards'] = ', '.join(bottom_list)
+    stats['initial_hand_str'] = ', '.join(initial_hand)
     results.append(stats)
     
-    results.sort(key=lambda x: x['win_rate'], reverse=False)
+    results.sort(key=lambda x: x['win_rate'], reverse=True)
     
     # 結果を表示
     print("\nMulligan Strategy Comparison Results (sorted by win rate):")
@@ -271,10 +273,45 @@ def compare_keep_cards(analyzer: DeckAnalyzer, initial_hand: list[str] = None, d
         print(f"Kept Card: {result['kept_card']}, Bottom Cards: {result['bottom_cards']}, Win Rate: {result['win_rate']:.1f}%")
     
     # 結果をCSVに保存
-    fields = DEFAULT_PRIORITY_FIELDS + ['kept_card', 'bottom_cards']
-    save_results_to_csv('compare_keep_cards', results, fields)
+    fields = DEFAULT_PRIORITY_FIELDS + ['kept_card', 'bottom_cards', 'initial_hand_str']
+    filename = f"compare_keep_cards_{hand_str}"
+    save_results_to_csv(filename, results, fields)
     
     return results
+
+def compare_keep_cards(analyzer: DeckAnalyzer, deck_path: str = 'decks/wind3_valakut3_cantor0_paradise1.txt', draw_count: int = 19, iterations: int = 100000):
+    """
+    複数の初期手札パターンに対してキープするカードを比較する関数
+    
+    Args:
+        analyzer: DeckAnalyzerインスタンス
+        deck_path: デッキファイルのパス
+        draw_count: ドロー数
+        iterations: シミュレーション回数
+        
+    Returns:
+        各初期手札パターンの結果のリスト
+    """
+    # 複数の初期手札パターンを定義
+    initial_hands = [
+        [
+            GEMSTONE_MINE, DARK_RITUAL, NECRODOMINANCE,
+            LOTUS_PETAL, BORNE_UPON_WIND, MANAMORPHOSE, VALAKUT_AWAKENING
+        ],
+        [
+            GEMSTONE_MINE, DARK_RITUAL, NECRODOMINANCE,
+            LOTUS_PETAL, BORNE_UPON_WIND, BORNE_UPON_WIND, BORNE_UPON_WIND
+        ]
+    ]
+    
+    all_results = []
+    
+    # 各初期手札パターンに対して分析を実行
+    for initial_hand in initial_hands:
+        results = compare_keep_cards_for_hand(analyzer, initial_hand, deck_path, draw_count, iterations)
+        all_results.extend(results)
+    
+    return all_results
 
 if __name__ == "__main__":
     analyzer = DeckAnalyzer()
