@@ -279,19 +279,13 @@ def compare_keep_cards_for_hand(analyzer: DeckAnalyzer, initial_hand: list[str],
     
     return results
 
-def compare_keep_cards(analyzer: DeckAnalyzer, deck_path: str = 'decks/wind3_valakut3_cantor0_paradise1.txt', draw_count: int = 19, iterations: int = 100000):
-    """
-    複数の初期手札パターンに対してキープするカードを比較する関数
+if __name__ == "__main__":
+    analyzer = DeckAnalyzer()
+    #compare_decks(analyzer)
+    #analyze_draw_counts(analyzer)
+    #compare_initial_hands(analyzer)
+    #compare_chancellor_decks(analyzer)
     
-    Args:
-        analyzer: DeckAnalyzerインスタンス
-        deck_path: デッキファイルのパス
-        draw_count: ドロー数
-        iterations: シミュレーション回数
-        
-    Returns:
-        各初期手札パターンの結果のリスト
-    """
     # 複数の初期手札パターンを定義
     initial_hands = [
         [
@@ -304,19 +298,6 @@ def compare_keep_cards(analyzer: DeckAnalyzer, deck_path: str = 'decks/wind3_val
         ]
     ]
     
-    all_results = []
-    
     # 各初期手札パターンに対して分析を実行
     for initial_hand in initial_hands:
-        results = compare_keep_cards_for_hand(analyzer, initial_hand, deck_path, draw_count, iterations)
-        all_results.extend(results)
-    
-    return all_results
-
-if __name__ == "__main__":
-    analyzer = DeckAnalyzer()
-    #compare_decks(analyzer)
-    #analyze_draw_counts(analyzer)
-    #compare_initial_hands(analyzer)
-    #compare_chancellor_decks(analyzer)
-    compare_keep_cards(analyzer)
+        compare_keep_cards_for_hand(analyzer, initial_hand)
