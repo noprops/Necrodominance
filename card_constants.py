@@ -18,6 +18,7 @@ BESEECH_MIRROR = "Beseech the Mirror"
 TENDRILS_OF_AGONY = "Tendrils of Agony"
 PACT_OF_NEGATION = "Pact of Negation"
 DURESS = "DURESS"
+CHANCELLOR_OF_ANNEX = "Chancellor of the Annex"
 
 ALL_CARDS = [
     GEMSTONE_MINE,
@@ -38,15 +39,19 @@ ALL_CARDS = [
     BESEECH_MIRROR,
     TENDRILS_OF_AGONY,
     PACT_OF_NEGATION,
-    DURESS
+    DURESS,
+    CHANCELLOR_OF_ANNEX
 ]
 
 def get_card_color(card_name):
+    white_cards = [CHANCELLOR_OF_ANNEX]
     green_cards = [SUMMONERS_PACT, ELVISH_SPIRIT_GUIDE]
     red_cards = [SIMIAN_SPIRIT_GUIDE, WILD_CANTOR, MANAMORPHOSE, VALAKUT_AWAKENING]
     blue_cards = [BORNE_UPON_WIND, PACT_OF_NEGATION]
     black_cards = [DARK_RITUAL, CABAL_RITUAL, NECRODOMINANCE, BESEECH_MIRROR, DURESS]
     
+    if card_name in white_cards:
+        return 'W'
     if card_name in green_cards:
         return 'G'
     elif card_name in red_cards:

@@ -390,7 +390,9 @@ class GameState:
         self.battlefield.append(CHROME_MOX)
         if imprint:
             self.hand.remove(imprint)
-            if imprint == PACT_OF_NEGATION or imprint == BORNE_UPON_WIND:
+            if imprint == CHANCELLOR_OF_ANNEX:
+                self.mana_source.add_mana_source('W')
+            elif imprint == PACT_OF_NEGATION or imprint == BORNE_UPON_WIND:
                 self.mana_source.add_mana_source('U')
             elif imprint == SUMMONERS_PACT:
                 self.mana_source.add_mana_source('G')

@@ -140,7 +140,12 @@ class ManaGenerationState:
         return False
 
     def try_cast_chrome_mox(self, color: str) -> bool:
-        if color == 'U':
+        if color == 'W':
+            if self.try_imprint(CHANCELLOR_OF_ANNEX):
+                self.hand.remove(CHROME_MOX)
+                self.cards_used_from_hand.append(CHROME_MOX)
+                return True
+        elif color == 'U':
             if self.try_imprint(PACT_OF_NEGATION) or self.try_imprint(BORNE_UPON_WIND):
                 self.hand.remove(CHROME_MOX)
                 self.cards_used_from_hand.append(CHROME_MOX)
@@ -324,7 +329,7 @@ class ManaGenerationState:
         if self.can_cast_sorcery:
             # Cast Chrome Mox
             if CHROME_MOX in self.hand:
-                for color in ['G', 'B', 'R', 'U']:
+                for color in ['W', 'G', 'B', 'R', 'U']:
                     if self.try_cast_chrome_mox(color):
                         self.mana_pool.add_mana(color)
                         if self.try_generate_generic(required, generic):

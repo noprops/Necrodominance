@@ -232,11 +232,12 @@ def compare_initial_hands(analyzer: DeckAnalyzer):
         [GEMSTONE_MINE, DARK_RITUAL, NECRODOMINANCE, VALAKUT_AWAKENING],
         [GEMSTONE_MINE, DARK_RITUAL, NECRODOMINANCE, BESEECH_MIRROR],
         [GEMSTONE_MINE, DARK_RITUAL, NECRODOMINANCE, TENDRILS_OF_AGONY],
-        [GEMSTONE_MINE, DARK_RITUAL, NECRODOMINANCE, CHROME_MOX]
+        [GEMSTONE_MINE, DARK_RITUAL, NECRODOMINANCE, CHROME_MOX],
+        [GEMSTONE_MINE, DARK_RITUAL, NECRODOMINANCE, GEMSTONE_MINE]
     ]
 
-    deck = create_deck('decks/wind3_valakut3_cantor1.txt')
-    results = analyzer.compare_initial_hands(initial_hands, deck)
+    deck = create_deck('decks/wind3_valakut3_cantor0_paradise1.txt')
+    results = analyzer.compare_initial_hands(initial_hands, deck, 19, 200000)
     
     save_results_to_csv('compare_initial_hands', results, DEFAULT_PRIORITY_FIELDS)
 
@@ -267,8 +268,88 @@ def analyze_draw_counts(analyzer: DeckAnalyzer):
     
     save_results_to_csv('analyze_draw_counts', all_results, DEFAULT_PRIORITY_FIELDS)
 
+def compare_chancellor_decks(analyzer: DeckAnalyzer):
+    """
+    Chancellor of the Annexを4枚追加したデッキバリエーションを比較する関数
+    
+    基本デッキ: decks/wind3_valakut3_cantor0_paradise1.txt
+    - Chancellor of the Annexを4枚追加
+    - 指定されたパターンに従って4枚のカードを抜いて60枚にする
+    - 各パターンに対してcompare_decksを実行
+    """
+    # 基本デッキを読み込む
+    base_deck_path = 'decks/wind3_valakut3_cantor0_paradise1.txt'
+    base_deck = create_deck(base_deck_path)
+    
+    # Chancellor of the Annexを4枚追加
+    base_deck_with_chancellor = base_deck + [CHANCELLOR_OF_ANNEX] * 4
+    
+    # 抜くカードのパターンを定義
+    removal_patterns = [
+        # 抜くカード4枚
+        [CHROME_MOX] * 4,
+        [CHROME_MOX] * 3 + [SUMMONERS_PACT] * 1,
+        [CHROME_MOX] * 2 + [SUMMONERS_PACT] * 2,
+        [CHROME_MOX] * 1 + [SUMMONERS_PACT] * 1 + [BESEECH_MIRROR] * 2,
+        [CHROME_MOX] * 1 + [SUMMONERS_PACT] * 1 + [VALAKUT_AWAKENING] * 2,
+        [CHROME_MOX] * 1 + [SUMMONERS_PACT] * 1 + [VALAKUT_AWAKENING] * 1 + [BESEECH_MIRROR] * 1,
+        [CHROME_MOX] * 1 + [SUMMONERS_PACT] * 1 + [VALAKUT_AWAKENING] * 1 + [BORNE_UPON_WIND] * 1,
+        
+        [UNDISCOVERED_PARADISE] * 1 + [CHROME_MOX] * 3,
+        [UNDISCOVERED_PARADISE] * 1 + [CHROME_MOX] * 2 + [SUMMONERS_PACT] * 1,
+        [UNDISCOVERED_PARADISE] * 1 + [CHROME_MOX] * 1 + [SUMMONERS_PACT] * 1 + [BESEECH_MIRROR] * 1,
+        [UNDISCOVERED_PARADISE] * 1 + [CHROME_MOX] * 1 + [SUMMONERS_PACT] * 1 + [UNDISCOVERED_PARADISE] * 0 + [VALAKUT_AWAKENING] * 1,  # 注: UNDISCOVEREDは1枚しかないので2枚は指定できない
+        
+        [UNDISCOVERED_PARADISE] * 1 + [GEMSTONE_MINE] * 3,
+        [UNDISCOVERED_PARADISE] * 1 + [GEMSTONE_MINE] * 1 + [CHROME_MOX] * 2,
+    ]
+    
+    # 各パターンに対してデッキを作成
+    decks = []
+    deck_names = []
+    
+    for i, pattern in enumerate(removal_patterns):
+        # パターン名を作成
+        pattern_name = f"chancellor_pattern_{i+1}"
+        
+        # デッキをコピー
+        new_deck = base_deck_with_chancellor.copy()
+        
+        # カードを抜く
+        for card in pattern:
+            if card in new_deck:
+                new_deck.remove(card)
+            else:
+                print(f"Warning: Card {card} not found in deck for pattern {pattern_name}")
+        
+        # パターン名にカード情報を追加
+        card_counts = {}
+        for card in pattern:
+            if card in card_counts:
+                card_counts[card] += 1
+            else:
+                card_counts[card] = 1
+        
+        pattern_desc = "_".join([f"{count}{card.replace(' ', '_')}" for card, count in card_counts.items()])
+        pattern_name = f"chancellor_minus_{pattern_desc}"
+        
+        # デッキとデッキ名を追加
+        decks.append(new_deck)
+        deck_names.append(pattern_name)
+    
+    # デッキの枚数を確認
+    for i, deck in enumerate(decks):
+        print(f"Deck {deck_names[i]}: {len(deck)} cards")
+    
+    # 比較を実行
+    results = analyzer.compare_decks(decks, deck_names, 19, mulligan_until_necro=True, iterations=1000000)
+    
+    # 結果をCSVに保存
+    save_results_to_csv('compare_chancellor_decks', results, DEFAULT_PRIORITY_FIELDS)
+
 if __name__ == "__main__":
     analyzer = DeckAnalyzer()
     #compare_decks(analyzer)
-    analyze_draw_counts(analyzer)
+    #analyze_draw_counts(analyzer)
     #compare_initial_hands(analyzer)
+    compare_chancellor_decks(analyzer)
