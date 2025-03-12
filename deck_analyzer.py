@@ -29,13 +29,14 @@ class DeckAnalyzer:
     def __init__(self):
         self.game = GameState()
     
-    def run_multiple_simulations_without_mulligan(self, deck: list[str], initial_hand: list[str], draw_count: int, iterations: int = 10000) -> dict:
+    def run_multiple_simulations_with_initial_hand(self, deck: list[str], initial_hand: list[str], bottom_list: list[str] = [], draw_count: int = 19, iterations: int = 10000) -> dict:
         """
         マリガンなしでシミュレーションを実行する関数
         
         Args:
             deck: デッキ（カード名のリスト）
             initial_hand: 初期手札
+            bottom_list: デッキボトムに戻すカードのリスト
             draw_count: ドロー数
             iterations: シミュレーション回数
             
@@ -43,7 +44,7 @@ class DeckAnalyzer:
             シミュレーション結果の統計情報を含む辞書（シンプル版）
         """
         # 基本関数を呼び出し
-        full_stats = self.run_multiple_simulations(deck, initial_hand, draw_count, False, iterations)
+        full_stats = self.run_multiple_simulations(deck, initial_hand, bottom_list, draw_count, False, iterations)
         
         # シンプルな統計情報を作成
         stats = {
@@ -61,7 +62,7 @@ class DeckAnalyzer:
         
         return stats
     
-    def run_multiple_simulations(self, deck: list[str], initial_hand: list[str], draw_count: int, mulligan_until_necro: bool, iterations: int = 10000) -> dict:
+    def run_multiple_simulations(self, deck: list[str], initial_hand: list[str], bottom_list: list[str] = [], draw_count: int = 19, mulligan_until_necro: bool = False, iterations: int = 10000) -> dict:
         # Statistics
         # Necroを唱えて勝った回数
         wins = defaultdict(int)
@@ -81,7 +82,7 @@ class DeckAnalyzer:
             random.shuffle(deck)
             # 初期手札が指定されている場合は、run_with_initial_handを呼び出す
             if initial_hand:
-                result = self.game.run_with_initial_hand(deck, initial_hand, draw_count)
+                result = self.game.run_with_initial_hand(deck, initial_hand, bottom_list, draw_count)
             # 初期手札が指定されていない場合は、run_without_initial_handを呼び出す
             else:
                 result = self.game.run_without_initial_hand(deck, draw_count, mulligan_until_necro)
@@ -173,20 +174,17 @@ class DeckAnalyzer:
         results = []
         for draw_count in range(max_draw, min_draw - 1, -1):
             print(f"\nAnalyzing draw_count = {draw_count}")
-            stats = self.run_multiple_simulations_without_mulligan(deck, initial_hand, draw_count, iterations)
+            stats = self.run_multiple_simulations_with_initial_hand(deck, initial_hand, [], draw_count, iterations)
             results.append(stats)
         
         return results
     
-    def compare_decks(self, decks: list[list[str]], deck_names: list[str], draw_count: int, mulligan_until_necro: bool, iterations: int = 10000):
+    def compare_decks(self, decks: list[list[str]], deck_names: list[str], draw_count: int, iterations: int = 10000):
         results = []
         
         for i, deck in enumerate(decks):
             deck_name = deck_names[i]
-            if mulligan_until_necro:
-                stats = self.run_multiple_simulations(deck, [], draw_count, True, iterations)
-            else:
-                stats = self.run_multiple_simulations_without_mulligan(deck, [], draw_count, iterations)
+            stats = self.run_multiple_simulations(deck, [], [], draw_count, True, iterations)
             
             # デッキ名を追加
             stats['deck_name'] = deck_name
@@ -200,11 +198,11 @@ class DeckAnalyzer:
         
         return results
     
-    def compare_initial_hands(self, initial_hands: list[list[str]], deck: list[str], draw_count: int = 19, iterations: int = 10000):
+    def compare_initial_hands(self, deck: list[str], initial_hands: list[list[str]], draw_count: int = 19, iterations: int = 10000):
         results = []
         
         for initial_hand in initial_hands:
-            stats = self.run_multiple_simulations_without_mulligan(deck, initial_hand, draw_count, iterations)
+            stats = self.run_multiple_simulations_with_initial_hand(deck, initial_hand, [], draw_count, iterations)
             
             # 初期手札の内容を追加
             stats['initial_hand'] = ', '.join(initial_hand)
@@ -221,147 +219,5 @@ class DeckAnalyzer:
         
         return results
 
-def compare_initial_hands(analyzer: DeckAnalyzer):
-    initial_hands = [
-        [GEMSTONE_MINE, DARK_RITUAL, NECRODOMINANCE],
-        [GEMSTONE_MINE, DARK_RITUAL, NECRODOMINANCE, MANAMORPHOSE],
-        [GEMSTONE_MINE, DARK_RITUAL, NECRODOMINANCE, BORNE_UPON_WIND],
-        [GEMSTONE_MINE, DARK_RITUAL, NECRODOMINANCE, MANAMORPHOSE, BORNE_UPON_WIND],
-        [GEMSTONE_MINE, DARK_RITUAL, NECRODOMINANCE, ELVISH_SPIRIT_GUIDE],
-        [GEMSTONE_MINE, DARK_RITUAL, NECRODOMINANCE, SIMIAN_SPIRIT_GUIDE],
-        [GEMSTONE_MINE, DARK_RITUAL, NECRODOMINANCE, ELVISH_SPIRIT_GUIDE, SIMIAN_SPIRIT_GUIDE],
-        [GEMSTONE_MINE, DARK_RITUAL, NECRODOMINANCE, LOTUS_PETAL],
-        [GEMSTONE_MINE, DARK_RITUAL, NECRODOMINANCE, LOTUS_PETAL, LOTUS_PETAL],
-        [GEMSTONE_MINE, DARK_RITUAL, NECRODOMINANCE, DARK_RITUAL],
-        [GEMSTONE_MINE, DARK_RITUAL, NECRODOMINANCE, CABAL_RITUAL],
-        [GEMSTONE_MINE, DARK_RITUAL, NECRODOMINANCE, VALAKUT_AWAKENING],
-        [GEMSTONE_MINE, DARK_RITUAL, NECRODOMINANCE, BESEECH_MIRROR],
-        [GEMSTONE_MINE, DARK_RITUAL, NECRODOMINANCE, TENDRILS_OF_AGONY],
-        [GEMSTONE_MINE, DARK_RITUAL, NECRODOMINANCE, CHROME_MOX],
-        [GEMSTONE_MINE, DARK_RITUAL, NECRODOMINANCE, GEMSTONE_MINE]
-    ]
-
-    deck = create_deck('decks/wind3_valakut3_cantor0_paradise1.txt')
-    results = analyzer.compare_initial_hands(initial_hands, deck, 19, 200000)
-    
-    save_results_to_csv('compare_initial_hands', results, DEFAULT_PRIORITY_FIELDS)
-
-def compare_decks(analyzer: DeckAnalyzer):
-    decks = [create_deck(path) for path in DECK_PATHS]
-    deck_names = [get_filename_without_extension(path) for path in DECK_PATHS]
-    
-    results = analyzer.compare_decks(decks, deck_names, 19, mulligan_until_necro=True, iterations=1000000)
-    
-    save_results_to_csv('compare_decks', results, DEFAULT_PRIORITY_FIELDS)
-
-def analyze_draw_counts(analyzer: DeckAnalyzer):
-    initial_hand = [GEMSTONE_MINE, DARK_RITUAL, NECRODOMINANCE]
-    all_results = []
-    
-    for deck_path in DECK_PATHS:
-        print(f"\nAnalyzing deck: {deck_path}")
-        deck = create_deck(deck_path)
-        deck_name = get_filename_without_extension(deck_path)
-        
-        # 100,000回のイテレーションで実行
-        results = analyzer.run_draw_count_analysis(deck, initial_hand, min_draw=10, max_draw=19, iterations=100000)
-        
-        # 各結果にデッキ名を追加
-        for result in results:
-            result['deck_name'] = deck_name
-            all_results.append(result)
-    
-    save_results_to_csv('analyze_draw_counts', all_results, DEFAULT_PRIORITY_FIELDS)
-
-def compare_chancellor_decks(analyzer: DeckAnalyzer):
-    """
-    Chancellor of the Annexを4枚追加したデッキバリエーションを比較する関数
-    
-    基本デッキ: decks/wind3_valakut3_cantor0_paradise1.txt
-    - Chancellor of the Annexを4枚追加
-    - 指定されたパターンに従って4枚のカードを抜いて60枚にする
-    - 各パターンに対してcompare_decksを実行
-    """
-    # 基本デッキを読み込む
-    base_deck_path = 'decks/wind3_valakut3_cantor0_paradise1.txt'
-    base_deck = create_deck(base_deck_path)
-    
-    # Chancellor of the Annexを4枚追加
-    base_deck_with_chancellor = base_deck + [CHANCELLOR_OF_ANNEX] * 4
-    
-    # 抜くカードのパターンを定義
-    removal_patterns = [
-        [CHROME_MOX] * 4,
-        [CHROME_MOX] * 3 + [SUMMONERS_PACT] * 1,
-        [CHROME_MOX] * 2 + [SUMMONERS_PACT] * 2,
-        [CHROME_MOX] * 1 + [SUMMONERS_PACT] * 1 + [BESEECH_MIRROR] * 2,
-        [CHROME_MOX] * 1 + [SUMMONERS_PACT] * 1 + [VALAKUT_AWAKENING] * 2,
-        [CHROME_MOX] * 1 + [SUMMONERS_PACT] * 1 + [VALAKUT_AWAKENING] * 1 + [BESEECH_MIRROR] * 1,
-        [CHROME_MOX] * 1 + [SUMMONERS_PACT] * 1 + [VALAKUT_AWAKENING] * 1 + [BORNE_UPON_WIND] * 1,
-        
-        [UNDISCOVERED_PARADISE] * 1 + [CHROME_MOX] * 3,
-        [UNDISCOVERED_PARADISE] * 1 + [CHROME_MOX] * 2 + [SUMMONERS_PACT] * 1,
-        [UNDISCOVERED_PARADISE] * 1 + [CHROME_MOX] * 1 + [SUMMONERS_PACT] * 1 + [BESEECH_MIRROR] * 1,
-        [UNDISCOVERED_PARADISE] * 1 + [CHROME_MOX] * 1 + [SUMMONERS_PACT] * 1 + [UNDISCOVERED_PARADISE] * 0 + [VALAKUT_AWAKENING] * 1,  # 注: UNDISCOVEREDは1枚しかないので2枚は指定できない
-        
-        [UNDISCOVERED_PARADISE] * 1 + [GEMSTONE_MINE] * 3,
-        [UNDISCOVERED_PARADISE] * 1 + [GEMSTONE_MINE] * 1 + [CHROME_MOX] * 2,
-    ]
-    
-    # 各パターンに対してデッキを作成
-    decks = []
-    deck_names = []
-    
-    for i, pattern in enumerate(removal_patterns):
-        # パターン名を作成
-        pattern_name = f"chancellor_pattern_{i+1}"
-        
-        # デッキをコピー
-        new_deck = base_deck_with_chancellor.copy()
-        
-        # カードを抜く
-        for card in pattern:
-            if card in new_deck:
-                new_deck.remove(card)
-            else:
-                print(f"Warning: Card {card} not found in deck for pattern {pattern_name}")
-        
-        # パターン名にカード情報を追加
-        card_counts = {}
-        for card in pattern:
-            if card in card_counts:
-                card_counts[card] += 1
-            else:
-                card_counts[card] = 1
-        
-        pattern_desc = "_".join([f"{count}{card.replace(' ', '_')}" for card, count in card_counts.items()])
-        pattern_name = f"chancellor_minus_{pattern_desc}"
-        
-        # デッキとデッキ名を追加
-        decks.append(new_deck)
-        deck_names.append(pattern_name)
-    
-    # デッキの枚数を確認
-    for i, deck in enumerate(decks):
-        print(f"Deck {deck_names[i]}: {len(deck)} cards")
-    
-    # 比較を実行
-    results = analyzer.compare_decks(decks, deck_names, 19, mulligan_until_necro=True, iterations=1000000)
-    
-    # win_rateの昇順でソート（最も低いものが先頭に来るように）
-    results.sort(key=lambda x: x['win_rate'])
-    
-    # ソート後の結果を表示
-    print("\nDeck Comparison Results (sorted by win rate):")
-    for result in results:
-        print(f"Deck: {result['deck_name']}, Win Rate: {result['win_rate']:.1f}%")
-    
-    # 結果をCSVに保存
-    save_results_to_csv('compare_chancellor_decks', results, DEFAULT_PRIORITY_FIELDS)
-
 if __name__ == "__main__":
     analyzer = DeckAnalyzer()
-    #compare_decks(analyzer)
-    #analyze_draw_counts(analyzer)
-    #compare_initial_hands(analyzer)
-    compare_chancellor_decks(analyzer)

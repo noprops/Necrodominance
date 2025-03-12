@@ -41,8 +41,7 @@ class TestRunGame(unittest.TestCase):
         
         # Verify deck is 60 cards
         self.assertEqual(len(deck), 60, f"Deck is not 60 cards ({len(deck)} cards)")
-
-        # すべてのテストケースでinitial_handを渡しているので、run_with_initial_handを呼び出す
+        
         result = self.game.run_with_initial_hand(deck, initial_hand, draw_count)
         
         # Assert game result

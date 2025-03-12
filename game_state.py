@@ -884,7 +884,7 @@ class GameState:
         
         return True
 
-    def run_with_initial_hand(self, deck: list[str], initial_hand: list[str], draw_count: int) -> bool:
+    def run_with_initial_hand(self, deck: list[str], initial_hand: list[str], draw_count: int, bottom_list: list[str] = []) -> bool:
         """
         初期手札が指定されている場合のゲーム実行関数
         
@@ -892,6 +892,7 @@ class GameState:
             deck: デッキ（カード名のリスト）
             initial_hand: 初期手札
             draw_count: ドロー数
+            bottom_list: デッキボトムに戻すカードのリスト（マリガン処理をシミュレート）
             
         Returns:
             ゲームの勝敗結果（True: 勝ち, False: 負け）
@@ -914,6 +915,20 @@ class GameState:
                 self.deck.remove(card)
             else:
                 self.debug(f"Warning: Card {card} not found in deck")
+        
+        # bottom_listが空でない場合、指定されたカードを手札からデッキボトムに移動
+        if bottom_list:
+            cards_to_bottom = []
+            for card in bottom_list:
+                if card in self.hand:
+                    self.hand.remove(card)
+                    cards_to_bottom.append(card)
+                else:
+                    self.debug(f"Warning: Card {card} not found in hand for bottom_list")
+            
+            # カードをデッキボトムに追加
+            self.deck.extend(cards_to_bottom)
+            self.debug(f"Moved {len(cards_to_bottom)} cards to bottom of deck: {', '.join(cards_to_bottom)}")
         
         if not self.main_phase():
             return False
