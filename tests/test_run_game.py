@@ -42,12 +42,8 @@ class TestRunGame(unittest.TestCase):
         # Verify deck is 60 cards
         self.assertEqual(len(deck), 60, f"Deck is not 60 cards ({len(deck)} cards)")
 
-        # 初期手札が指定されている場合は、run_with_initial_handを呼び出す
-        if initial_hand:
-            result = self.game.run_with_initial_hand(deck, initial_hand, draw_count)
-        # 初期手札が指定されていない場合は、run_with_mulliganを呼び出す
-        else:
-            result = self.game.run_with_mulligan(deck, draw_count, False)
+        # すべてのテストケースでinitial_handを渡しているので、run_with_initial_handを呼び出す
+        result = self.game.run_with_initial_hand(deck, initial_hand, draw_count)
         
         # Assert game result
         if expect_win:

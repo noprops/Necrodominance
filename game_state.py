@@ -925,9 +925,9 @@ class GameState:
             self.debug("You Lose.")
             return False
     
-    def run_with_mulligan(self, deck: list[str], draw_count: int, mulligan_until_necro: bool) -> bool:
+    def run_without_initial_hand(self, deck: list[str], draw_count: int, mulligan_until_necro: bool) -> bool:
         """
-        マリガンを行う場合のゲーム実行関数
+        初期手札が指定されていない場合のゲーム実行関数（マリガンを行う）
         
         Args:
             deck: デッキ（カード名のリスト）
@@ -977,4 +977,4 @@ if __name__ == "__main__":
     #if initial_hand:
     #    game.run_with_initial_hand(deck, initial_hand, 19)
     #else:
-    game.run_with_mulligan(deck, 19, True)
+    game.run_without_initial_hand(deck, 19, True)
