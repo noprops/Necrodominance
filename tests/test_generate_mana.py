@@ -230,6 +230,20 @@ class TestGenerateMana(unittest.TestCase):
         self.assertEqual(self.game.mana_pool.B, 3)
         self.assertEqual(self.game.mana_pool.R, 0)
         self.assertEqual(self.game.mana_pool.G, 0)
+    
+    def test_try_generate_mana_W_in_main_phase(self):
+        self.game.battlefield = []
+        self.game.hand = [DARK_RITUAL, CHROME_MOX, BORNE_UPON_WIND, CHANCELLOR_OF_ANNEX]
+        self.game.did_cast_wind = False
+        self.game.can_cast_sorcery = True
+
+        self.assertTrue(self.game.try_generate_mana('W', []))
+
+        self.assertEqual(self.game.mana_pool.W, 1)
+        self.assertEqual(self.game.mana_pool.U, 0)
+        self.assertEqual(self.game.mana_pool.B, 0)
+        self.assertEqual(self.game.mana_pool.R, 0)
+        self.assertEqual(self.game.mana_pool.G, 0)
 
 if __name__ == '__main__':
     unittest.main()

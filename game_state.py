@@ -884,7 +884,59 @@ class GameState:
         
         return True
 
-    def run(self, deck: list[str], initial_hand: list[str], draw_count: int, mulligan_until_necro: bool) -> bool:
+    def run_with_initial_hand(self, deck: list[str], initial_hand: list[str], draw_count: int) -> bool:
+        """
+        初期手札が指定されている場合のゲーム実行関数
+        
+        Args:
+            deck: デッキ（カード名のリスト）
+            initial_hand: 初期手札
+            draw_count: ドロー数
+            
+        Returns:
+            ゲームの勝敗結果（True: 勝ち, False: 負け）
+        """
+        # デッキが60枚かどうかをチェック
+        if len(deck) != 60:
+            self.debug(f"Error: Deck must contain exactly 60 cards. Current deck has {len(deck)} cards.")
+            self.loss_reason = "Invalid deck size"
+            return False
+        
+        self.reset_game()
+        self.mulligan_count = 0
+        self.deck = deck.copy()
+        if self.shuffle_enabled:
+            self.shuffle_deck()
+        
+        self.hand = initial_hand.copy()
+        for card in self.hand:
+            if card in self.deck:
+                self.deck.remove(card)
+            else:
+                self.debug(f"Warning: Card {card} not found in deck")
+        
+        if not self.main_phase():
+            return False
+        
+        if self.end_step(draw_count):
+            self.debug("You Win.")
+            return True
+        else:
+            self.debug("You Lose.")
+            return False
+    
+    def run_with_mulligan(self, deck: list[str], draw_count: int, mulligan_until_necro: bool) -> bool:
+        """
+        マリガンを行う場合のゲーム実行関数
+        
+        Args:
+            deck: デッキ（カード名のリスト）
+            draw_count: ドロー数
+            mulligan_until_necro: ネクロを唱えられるまでマリガンするかどうか
+            
+        Returns:
+            ゲームの勝敗結果（True: 勝ち, False: 負け）
+        """
         # デッキが60枚かどうかをチェック
         if len(deck) != 60:
             self.debug(f"Error: Deck must contain exactly 60 cards. Current deck has {len(deck)} cards.")
@@ -899,12 +951,7 @@ class GameState:
             if self.shuffle_enabled:
                 self.shuffle_deck()
             
-            if initial_hand:
-                self.hand = initial_hand.copy()
-                for card in self.hand:
-                    self.deck.remove(card)
-            else:
-                self.draw_cards(7)
+            self.draw_cards(7)
             
             if self.main_phase():
                 # Necroキャストに成功したらループを抜ける
@@ -926,5 +973,8 @@ if __name__ == "__main__":
     deck = create_deck('decks/wind4_valakut2_cantor1.txt')
     random.shuffle(deck)
     #initial_hand = [GEMSTONE_MINE, DARK_RITUAL, NECRODOMINANCE]
-    initial_hand = []
-    game.run(deck, initial_hand, 19, True)
+    #initial_hand = []
+    #if initial_hand:
+    #    game.run_with_initial_hand(deck, initial_hand, 19)
+    #else:
+    game.run_with_mulligan(deck, 19, True)

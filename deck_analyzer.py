@@ -79,7 +79,12 @@ class DeckAnalyzer:
         for i in range(iterations):
             self.game.reset_game()
             random.shuffle(deck)
-            result = self.game.run(deck, initial_hand, draw_count, mulligan_until_necro)
+            # 初期手札が指定されている場合は、run_with_initial_handを呼び出す
+            if initial_hand:
+                result = self.game.run_with_initial_hand(deck, initial_hand, draw_count)
+            # 初期手札が指定されていない場合は、run_with_mulliganを呼び出す
+            else:
+                result = self.game.run_with_mulligan(deck, draw_count, mulligan_until_necro)
             mulligan_count = self.game.mulligan_count
             
             # Necroを唱えたかどうかをカウント
