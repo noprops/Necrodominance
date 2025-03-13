@@ -15,8 +15,8 @@ DECK_PATHS = [
 
 # フィールドの優先順位リスト（基本とマリガン回数ごとの統計情報を含む）
 DEFAULT_PRIORITY_FIELDS = [
-    'deck_name', 'initial_hand', 'draw_count', 'total_games', 'win_rate', 'cast_necro_rate', 'win_after_necro_rate',
-    'total_wins', 'total_losses', 'failed_necro_count', 'total_cast_necro', 'loss_reasons',
+    'deck_name', 'initial_hand', 'kept_card', 'bottom_cards', 'draw_count', 'total_games', 'win_rate', 'cast_necro_rate', 'win_after_necro_rate',
+    'total_wins', 'total_losses', 'wins', 'losses', 'failed_necro_count', 'total_cast_necro', 'loss_reasons',
     # wins_mull0, wins_mull1, ...
     'wins_mull0', 'wins_mull1', 'wins_mull2', 'wins_mull3', 'wins_mull4',
     # losses_mull0, losses_mull1, ...
@@ -29,7 +29,7 @@ DEFAULT_PRIORITY_FIELDS = [
 
 # 既存のDeckAnalyzerクラスのメソッドを使用するため、これらの関数は不要
 
-def compare_initial_hands(analyzer: DeckAnalyzer):
+def compare_initial_hands(analyzer: DeckAnalyzer, iterations: int = 200000):
     """
     プリセットされた初期手札のリストを比較する関数
     
@@ -59,13 +59,13 @@ def compare_initial_hands(analyzer: DeckAnalyzer):
     ]
 
     deck = create_deck('decks/wind3_valakut3_cantor0_paradise1.txt')
-    results = analyzer.compare_initial_hands(deck, initial_hands, 19, 200000)
+    results = analyzer.compare_initial_hands(deck, initial_hands, 19, iterations)
     
     save_results_to_csv('compare_initial_hands', results, DEFAULT_PRIORITY_FIELDS)
     
     return results
 
-def compare_decks(analyzer: DeckAnalyzer):
+def compare_decks(analyzer: DeckAnalyzer, iterations: int = 1000000):
     """
     プリセットされたデッキのリストを比較する関数
     
@@ -78,13 +78,13 @@ def compare_decks(analyzer: DeckAnalyzer):
     decks = [create_deck(path) for path in DECK_PATHS]
     deck_names = [get_filename_without_extension(path) for path in DECK_PATHS]
     
-    results = analyzer.compare_decks(decks, deck_names, 19, iterations=1000000)
+    results = analyzer.compare_decks(decks, deck_names, 19, iterations)
     
     save_results_to_csv('compare_decks', results, DEFAULT_PRIORITY_FIELDS)
     
     return results
 
-def analyze_draw_counts(analyzer: DeckAnalyzer):
+def analyze_draw_counts(analyzer: DeckAnalyzer, iterations: int = 100000):
     """
     プリセットされたデッキのリストに対してドロー数分析を実行する関数
     
@@ -103,7 +103,7 @@ def analyze_draw_counts(analyzer: DeckAnalyzer):
         deck_name = get_filename_without_extension(deck_path)
         
         # 100,000回のイテレーションで実行
-        results = analyzer.run_draw_count_analysis(deck, initial_hand, min_draw=10, max_draw=19, iterations=100000)
+        results = analyzer.run_draw_count_analysis(deck, initial_hand, min_draw=10, max_draw=19, iterations=iterations)
         
         # 各結果にデッキ名を追加
         for result in results:
@@ -114,7 +114,7 @@ def analyze_draw_counts(analyzer: DeckAnalyzer):
     
     return all_results
 
-def compare_chancellor_decks(analyzer: DeckAnalyzer):
+def compare_chancellor_decks(analyzer: DeckAnalyzer, iterations: int = 1000000):
     """
     Chancellor of the Annexを4枚追加したデッキバリエーションを比較する関数
     
@@ -187,7 +187,7 @@ def compare_chancellor_decks(analyzer: DeckAnalyzer):
         print(f"Deck {deck_names[i]}: {len(deck)} cards")
     
     # 比較を実行
-    results = analyzer.compare_decks(decks, deck_names, 19, iterations=1000000)
+    results = analyzer.compare_decks(decks, deck_names, 19, iterations)
     
     # win_rateの昇順でソート（最も低いものが先頭に来るように）
     results.sort(key=lambda x: x['win_rate'])
@@ -252,7 +252,7 @@ def compare_keep_cards_for_hand(analyzer: DeckAnalyzer, initial_hand: list[str],
         # 手札に残したカードをラベル付け
         stats['kept_card'] = keep_card
         stats['bottom_cards'] = ', '.join(bottom_list)
-        stats['initial_hand_str'] = ', '.join(initial_hand)
+        stats['initial_hand'] = ', '.join(initial_hand)
         
         results.append(stats)
     
@@ -262,10 +262,10 @@ def compare_keep_cards_for_hand(analyzer: DeckAnalyzer, initial_hand: list[str],
     stats = analyzer.run_multiple_simulations_with_initial_hand(deck, initial_hand, bottom_list, draw_count, iterations)
     stats['kept_card'] = 'None'
     stats['bottom_cards'] = ', '.join(bottom_list)
-    stats['initial_hand_str'] = ', '.join(initial_hand)
+    stats['initial_hand'] = ', '.join(initial_hand)
     results.append(stats)
     
-    results.sort(key=lambda x: x['win_rate'], reverse=True)
+    results.sort(key=lambda x: x['win_rate'], reverse=False)
     
     # 結果を表示
     print("\nMulligan Strategy Comparison Results (sorted by win rate):")
@@ -273,31 +273,45 @@ def compare_keep_cards_for_hand(analyzer: DeckAnalyzer, initial_hand: list[str],
         print(f"Kept Card: {result['kept_card']}, Bottom Cards: {result['bottom_cards']}, Win Rate: {result['win_rate']:.1f}%")
     
     # 結果をCSVに保存
-    fields = DEFAULT_PRIORITY_FIELDS + ['kept_card', 'bottom_cards', 'initial_hand_str']
     filename = f"compare_keep_cards_{hand_str}"
-    save_results_to_csv(filename, results, fields)
+    save_results_to_csv(filename, results, DEFAULT_PRIORITY_FIELDS)
     
     return results
 
 if __name__ == "__main__":
+    import time
+    import datetime
+    
+    iterations = 1000000
     analyzer = DeckAnalyzer()
-    #compare_decks(analyzer)
-    #analyze_draw_counts(analyzer)
-    #compare_initial_hands(analyzer)
-    #compare_chancellor_decks(analyzer)
     
-    # 複数の初期手札パターンを定義
-    initial_hands = [
-        [
-            GEMSTONE_MINE, DARK_RITUAL, NECRODOMINANCE,
-            LOTUS_PETAL, BORNE_UPON_WIND, MANAMORPHOSE, VALAKUT_AWAKENING
-        ],
-        [
-            GEMSTONE_MINE, DARK_RITUAL, NECRODOMINANCE,
-            LOTUS_PETAL, BORNE_UPON_WIND, BORNE_UPON_WIND, BORNE_UPON_WIND
-        ]
-    ]
+    print("シミュレーション開始: ", datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+    start_time = time.time()
     
-    # 各初期手札パターンに対して分析を実行
-    for initial_hand in initial_hands:
-        compare_keep_cards_for_hand(analyzer, initial_hand)
+    ## ここから
+    compare_decks(analyzer, iterations)
+    analyze_draw_counts(analyzer, iterations)
+    compare_initial_hands(analyzer, iterations)
+    compare_chancellor_decks(analyzer, iterations)
+
+    initial_hand = [GEMSTONE_MINE, DARK_RITUAL, NECRODOMINANCE, LOTUS_PETAL, BORNE_UPON_WIND, MANAMORPHOSE, VALAKUT_AWAKENING]
+    compare_keep_cards_for_hand(analyzer, initial_hand, iterations=iterations)
+    initial_hand = [GEMSTONE_MINE, DARK_RITUAL, NECRODOMINANCE, LOTUS_PETAL, LOTUS_PETAL, BORNE_UPON_WIND, VALAKUT_AWAKENING]
+    compare_keep_cards_for_hand(analyzer, initial_hand, iterations=iterations)
+    initial_hand = [GEMSTONE_MINE, DARK_RITUAL, NECRODOMINANCE, LOTUS_PETAL, LOTUS_PETAL, BORNE_UPON_WIND, MANAMORPHOSE]
+    compare_keep_cards_for_hand(analyzer, initial_hand, iterations=iterations)
+    initial_hand = [GEMSTONE_MINE, DARK_RITUAL, NECRODOMINANCE, LOTUS_PETAL, LOTUS_PETAL, MANAMORPHOSE, VALAKUT_AWAKENING]
+    compare_keep_cards_for_hand(analyzer, initial_hand, iterations=iterations)
+    ## ここまで時間を計測
+    
+    end_time = time.time()
+    elapsed_time = end_time - start_time
+    
+    # 経過時間を時間、分、秒に変換
+    hours, remainder = divmod(elapsed_time, 3600)
+    minutes, seconds = divmod(remainder, 60)
+    
+    print("\n実行時間:")
+    print(f"合計: {elapsed_time:.2f}秒")
+    print(f"時間表示: {int(hours)}時間 {int(minutes)}分 {seconds:.2f}秒")
+    print("シミュレーション終了: ", datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
