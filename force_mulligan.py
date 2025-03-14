@@ -243,4 +243,6 @@ if __name__ == "__main__":
     filename = "force_mulligan_results"
     
     # deck_utils.pyのsave_results_to_csv関数を使用
-    save_results_to_csv(filename, results)
+    # CSVの列の順序を指定
+    priority_fields = ['force_count', 'total_simulations', 'count', 'percentage']
+    save_results_to_csv(filename, results, priority_fields)

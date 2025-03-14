@@ -1,4 +1,6 @@
 import random
+import csv
+import os
 from deck_utils import create_deck
 from mana_pool import ManaPool
 from mana_sources import ManaSources
@@ -15,6 +17,7 @@ class GameState:
     def __init__(self):
         self.debug_print = True  # Print control flag
         self.shuffle_enabled = True
+        self.opponent_has_counterspells = False
 
         self.mana_pool = ManaPool()
         self.mana_source = ManaSources(self.mana_pool)
@@ -50,6 +53,7 @@ class GameState:
     def copy_from(self, other):
         self.debug_print = other.debug_print
         self.shuffle_enabled = other.shuffle_enabled
+        self.opponent_has_counterspells = other.opponent_has_counterspells
         
         self.mana_pool = other.mana_pool.copy()
         self.mana_source = other.mana_source.copy()
@@ -459,6 +463,50 @@ class GameState:
         elif land == VAULT_OF_WHISPERS:
             self.mana_source.add_mana_source('B')
     
+    def get_opponent_force_count(self) -> int:
+        """
+        results/force_mulligan_results.csvからデータを読み込み、
+        確率に基づいて相手が持っているForceの枚数を返す
+        
+        Returns:
+            相手が持っているForceの枚数（0-3）
+        """
+        if not self.opponent_has_counterspells:
+            return 0
+            
+        csv_path = os.path.join('results', 'force_mulligan_results.csv')
+        
+        # CSVファイルが存在しない場合はデフォルト値を返す
+        if not os.path.exists(csv_path):
+            self.debug(f"Warning: {csv_path} not found. Using default probabilities.")
+            # デフォルトの確率: 0枚:1%, 1枚:79%, 2枚:19%, 3枚:1%
+            probabilities = {0: 0.01, 1: 0.79, 2: 0.19, 3: 0.01}
+        else:
+            # CSVファイルからデータを読み込む
+            probabilities = {}
+            try:
+                with open(csv_path, 'r') as f:
+                    reader = csv.DictReader(f)
+                    for row in reader:
+                        force_count = int(row['force_count'])
+                        percentage = float(row['percentage'])
+                        probabilities[force_count] = percentage / 100.0
+            except Exception as e:
+                self.debug(f"Error reading {csv_path}: {e}. Using default probabilities.")
+                # エラーが発生した場合はデフォルト値を使用
+                probabilities = {0: 0.01, 1: 0.79, 2: 0.19, 3: 0.01}
+        
+        # 確率に基づいてForceの枚数を選択
+        r = random.random()
+        cumulative_prob = 0.0
+        for force_count in sorted(probabilities.keys()):
+            cumulative_prob += probabilities[force_count]
+            if r <= cumulative_prob:
+                return force_count
+        
+        # 念のため、デフォルト値を返す
+        return 1
+
     def main_phase(self) -> bool:
         self.can_cast_sorcery = True
         self.return_count = max(0, self.mulligan_count - (7 - len(self.hand)))
