@@ -14,7 +14,7 @@ DECK_PATHS = [
 
 # フィールドの優先順位リスト（基本とマリガン回数ごとの統計情報を含む）
 DEFAULT_PRIORITY_FIELDS = [
-    'deck_name', 'initial_hand', 'kept_card', 'bottom_cards', 'draw_count', 'total_games', 'win_rate', 'cast_necro_rate', 'win_after_necro_rate',
+    'deck_name', 'initial_hand', 'kept_card', 'bottom_cards', 'draw_count', 'total_games', 'win_rate', 'cast_necro_rate', 'necro_resolve_rate', 'win_after_necro_resolve_rate',
     'total_wins', 'total_losses', 'wins', 'losses', 'failed_necro_count', 'total_cast_necro', 'loss_reasons',
     # wins_mull0, wins_mull1, ...
     'wins_mull0', 'wins_mull1', 'wins_mull2', 'wins_mull3', 'wins_mull4',
@@ -64,22 +64,135 @@ def compare_initial_hands(analyzer: DeckAnalyzer, iterations: int = 200000):
     
     return results
 
-def compare_decks(analyzer: DeckAnalyzer, iterations: int = 1000000):
+def compare_decks(analyzer: DeckAnalyzer, iterations: int = 1000000, opponent_has_forces: bool = False):
     """
-    プリセットされたデッキのリストを比較する関数
+    様々なデッキバリエーションを比較する関数
     
     Args:
         analyzer: DeckAnalyzerインスタンス
+        iterations: シミュレーション回数
+        opponent_has_forces: 相手がForceを持っているかどうか
         
     Returns:
         各デッキの結果のリスト
     """
-    decks = [create_deck(path) for path in DECK_PATHS]
-    deck_names = [get_filename_without_extension(path) for path in DECK_PATHS]
+    # ベースデッキを読み込む
+    base_deck_path = 'decks/wind3_valakut3_cantor1_paradise0.txt'
+    base_deck = create_deck(base_deck_path)
     
-    results = analyzer.compare_decks(decks, deck_names, 19, iterations)
+    # デッキとデッキ名のリスト
+    decks = []
+    deck_names = []
     
-    save_results_to_csv('compare_decks', results, DEFAULT_PRIORITY_FIELDS)
+    # ベースデッキを追加
+    decks.append(base_deck.copy())
+    deck_names.append("base_wind3_valakut3_cantor1_paradise0")
+    
+    # カード名のマッピング
+    card_mapping = {
+        "cantor": WILD_CANTOR,
+        "paradise": UNDISCOVERED_PARADISE,
+        "valakut": VALAKUT_AWAKENING,
+        "wind": BORNE_UPON_WIND,
+        "chrome": CHROME_MOX
+    }
+    
+    # 変更パターンのリスト
+    patterns = [
+        # パターン1: -1 cantor +1 paradise
+        {"remove": {"cantor": 1}, "add": {"paradise": 1}},
+        
+        # パターン2: -1 valakut +1 wind
+        {"remove": {"valakut": 1}, "add": {"wind": 1}},
+        
+        # パターン3: -1 cantor +1 paradise -1 valakut +1 wind
+        {"remove": {"cantor": 1, "valakut": 1}, "add": {"paradise": 1, "wind": 1}},
+        
+        # パターン4: -1 chrome +1 wind
+        {"remove": {"chrome": 1}, "add": {"wind": 1}},
+        
+        # パターン5: -1 chrome +1 wind -1 cantor +1 paradise
+        {"remove": {"chrome": 1, "cantor": 1}, "add": {"wind": 1, "paradise": 1}},
+        
+        # パターン6: -1 chrome +1 wind -1 cantor +1 valakut
+        {"remove": {"chrome": 1, "cantor": 1}, "add": {"wind": 1, "valakut": 1}},
+        
+        # パターン7: -2 chrome +1 wind +1 paradise
+        {"remove": {"chrome": 2}, "add": {"wind": 1, "paradise": 1}},
+        
+        # パターン8: -2 chrome +1 wind +1 valakut
+        {"remove": {"chrome": 2}, "add": {"wind": 1, "valakut": 1}},
+        
+        # パターン9: -2 chrome -1 cantor +1 wind +1 valakut +1 paradise
+        {"remove": {"chrome": 2, "cantor": 1}, "add": {"wind": 1, "valakut": 1, "paradise": 1}},
+        
+        # パターン10: -2 chrome -1 cantor +1 wind +2 paradise
+        {"remove": {"chrome": 2, "cantor": 1}, "add": {"wind": 1, "paradise": 2}}
+    ]
+    
+    # 各パターンに対してデッキを作成
+    for i, pattern in enumerate(patterns):
+        # 新しいデッキを作成
+        new_deck = base_deck.copy()
+        
+        # カードを削除
+        for card_type, count in pattern["remove"].items():
+            card = card_mapping[card_type]
+            for _ in range(count):
+                if card in new_deck:
+                    new_deck.remove(card)
+                else:
+                    print(f"Warning: Card {card} not found in deck for pattern {i+1}")
+        
+        # カードを追加
+        for card_type, count in pattern["add"].items():
+            card = card_mapping[card_type]
+            for _ in range(count):
+                new_deck.append(card)
+        
+        # デッキ名を作成
+        deck_name = "base"
+        for card_type, count in pattern["remove"].items():
+            deck_name += f"_minus{count}{card_type}"
+        for card_type, count in pattern["add"].items():
+            deck_name += f"_plus{count}{card_type}"
+        
+        # デッキとデッキ名を追加
+        decks.append(new_deck)
+        deck_names.append(deck_name)
+    
+    # デッキの枚数を確認
+    for i, deck in enumerate(decks):
+        print(f"Deck {deck_names[i]}: {len(deck)} cards")
+        
+        # カードの枚数を数える
+        card_counts = {}
+        for card in deck:
+            if card in card_counts:
+                card_counts[card] += 1
+            else:
+                card_counts[card] = 1
+        
+        # 重要なカードの枚数を表示
+        for card_type, card in card_mapping.items():
+            count = card_counts.get(card, 0)
+            print(f"  {card_type}: {count}")
+    
+    # 比較を実行
+    results = analyzer.compare_decks(decks, deck_names, 19, opponent_has_forces, iterations)
+    
+    # win_rateの降順でソート（最も高いものが先頭に来るように）
+    results.sort(key=lambda x: x['win_rate'], reverse=True)
+    
+    # ソート後の結果を表示
+    print("\nDeck Comparison Results (sorted by win rate):")
+    for result in results:
+        print(f"Deck: {result['deck_name']}, Win Rate: {result['win_rate']:.1f}%")
+        if opponent_has_forces and 'necro_resolve_rate' in result:
+            print(f"  Necro Resolve Rate: {result['necro_resolve_rate']:.1f}%")
+    
+    # 結果をCSVに保存
+    save_results_to_csv('compare_deck_variations', results, DEFAULT_PRIORITY_FIELDS)
     
     return results
 
@@ -388,7 +501,8 @@ if __name__ == "__main__":
     #compare_initial_hands(analyzer, iterations)
     #compare_chancellor_decks(analyzer, iterations)
     #compare_chancellor_decks_against_counterspells(analyzer, iterations)
-
+    compare_chancellor_decks_against_counterspells(analyzer, iterations=10000)
+    '''
     initial_hand = [GEMSTONE_MINE, DARK_RITUAL, NECRODOMINANCE, LOTUS_PETAL, BORNE_UPON_WIND, MANAMORPHOSE, VALAKUT_AWAKENING]
     compare_keep_cards_for_hand(analyzer, initial_hand, iterations=iterations)
     initial_hand = [GEMSTONE_MINE, DARK_RITUAL, NECRODOMINANCE, LOTUS_PETAL, LOTUS_PETAL, BORNE_UPON_WIND, VALAKUT_AWAKENING]
@@ -397,7 +511,7 @@ if __name__ == "__main__":
     compare_keep_cards_for_hand(analyzer, initial_hand, iterations=iterations)
     initial_hand = [GEMSTONE_MINE, DARK_RITUAL, NECRODOMINANCE, LOTUS_PETAL, LOTUS_PETAL, MANAMORPHOSE, VALAKUT_AWAKENING]
     compare_keep_cards_for_hand(analyzer, initial_hand, iterations=iterations)
-    
+    '''
     end_time = time.time()
     elapsed_time = end_time - start_time
     

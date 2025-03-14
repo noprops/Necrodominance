@@ -310,6 +310,14 @@ class ManaGenerationState:
             return True
         
         initial_state = self.copy()
+
+        # Chancellorを刻印でChrome Moxキャスト
+        if self.can_cast_sorcery and CHROME_MOX in self.hand and CHANCELLOR_OF_ANNEX in self.hand:
+            if self.try_cast_chrome_mox('W'):
+                self.mana_pool.add_mana('W')
+                if self.try_generate_generic(required, generic):
+                    return True
+                self.copy_from(initial_state)
         
         if DARK_RITUAL in self.hand and self.mana_pool.B > 0:
             self.cast_card_from_hand(DARK_RITUAL)
@@ -337,7 +345,7 @@ class ManaGenerationState:
         if self.can_cast_sorcery:
             # Cast Chrome Mox
             if CHROME_MOX in self.hand:
-                for color in ['W', 'G', 'B', 'R', 'U']:
+                for color in ['G', 'B', 'R', 'U']:
                     if self.try_cast_chrome_mox(color):
                         self.mana_pool.add_mana(color)
                         if self.try_generate_generic(required, generic):

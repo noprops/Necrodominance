@@ -1,8 +1,6 @@
 import random
-from copy import copy
 from collections import defaultdict
 from game_state import *
-from deck_utils import get_filename_without_extension, create_deck, save_results_to_csv
 
 DECK_PATHS = [
     'decks/wind4_valakut2_cantor1_paradise0.txt',
@@ -13,8 +11,8 @@ DECK_PATHS = [
 
 # フィールドの優先順位リスト（基本とマリガン回数ごとの統計情報を含む）
 DEFAULT_PRIORITY_FIELDS = [
-    'deck_name', 'initial_hand', 'draw_count', 'total_games', 'win_rate', 'cast_necro_rate', 'win_after_necro_resolve_rate',
-    'total_wins', 'total_losses', 'failed_necro_count', 'total_cast_necro', 'loss_reasons',
+    'deck_name', 'initial_hand', 'draw_count', 'total_games', 'win_rate', 'cast_necro_rate', 'necro_resolve_rate', 'win_after_necro_resolve_rate',
+    'total_wins', 'total_losses', 'total_cast_necro', 'failed_necro_count', 'necro_resolve_count', 'necro_countered_count', 'loss_reasons',
     # wins_mull0, wins_mull1, ...
     'wins_mull0', 'wins_mull1', 'wins_mull2', 'wins_mull3', 'wins_mull4',
     # losses_mull0, losses_mull1, ...

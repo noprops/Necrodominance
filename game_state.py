@@ -9,6 +9,7 @@ from card_constants import *
 
 # Loss Reason
 FALIED_NECRO = "Failed to cast Necrodominance"
+FAILED_NECRO_COUNTERED = "Failed to resolve Necrodominance due to counter spell"
 FAILED_VALAKUT_AND_WIND = "Failed to cast both Valakut and Borne Upon a Wind"
 FAILED_WIND_AFTER_VALAKUT = "Cast Valakut but failed to cast Borne Upon a Wind"
 FAILED_TENDRILS_AFTER_WIND = "Cast Borne Upon a Wind but failed to cast Tendrils"
@@ -17,7 +18,6 @@ class GameState:
     def __init__(self):
         self.debug_print = True  # Print control flag
         self.shuffle_enabled = True
-        self.opponent_has_counterspells = False
 
         self.mana_pool = ManaPool()
         self.mana_source = ManaSources(self.mana_pool)
@@ -38,6 +38,7 @@ class GameState:
         self.mulligan_count = 0 # マリガンした回数
         self.return_count = 0 # マリガンで戻すカードの枚数
         self.storm_count = 0
+        self.did_shuffle = False
         self.can_cast_sorcery = False
         self.did_cast_necro = False
         self.did_cast_valakut = False
@@ -53,7 +54,6 @@ class GameState:
     def copy_from(self, other):
         self.debug_print = other.debug_print
         self.shuffle_enabled = other.shuffle_enabled
-        self.opponent_has_counterspells = other.opponent_has_counterspells
         
         self.mana_pool = other.mana_pool.copy()
         self.mana_source = other.mana_source.copy()
@@ -69,6 +69,7 @@ class GameState:
         self.mulligan_count = other.mulligan_count
         self.return_count = other.return_count
         self.storm_count = other.storm_count
+        self.did_shuffle = other.did_shuffle
         self.can_cast_sorcery = other.can_cast_sorcery
         self.did_cast_necro = other.did_cast_necro
         self.did_cast_valakut = other.did_cast_valakut
@@ -79,6 +80,7 @@ class GameState:
     def shuffle_deck(self):
         if self.shuffle_enabled:
             random.shuffle(self.deck)
+            self.did_shuffle = True
 
     def add_any_mana_source(self, mana_source: str):
         self.mana_source.ANY += 1
@@ -470,10 +472,7 @@ class GameState:
         
         Returns:
             相手が持っているForceの枚数（0-3）
-        """
-        if not self.opponent_has_counterspells:
-            return 0
-            
+        """ 
         csv_path = os.path.join('results', 'force_mulligan_results.csv')
         
         # CSVファイルが存在しない場合はデフォルト値を返す
@@ -507,9 +506,12 @@ class GameState:
         # 念のため、デフォルト値を返す
         return 1
 
-    def main_phase(self) -> bool:
+    def main_phase(self, opponent_has_forces: bool = False, opponent_force_count: int = 0) -> bool:
+        # main phase中にシャッフルしたか調べるためにdid_shuffleをリセット
+        self.did_shuffle = False
         self.can_cast_sorcery = True
         self.return_count = max(0, self.mulligan_count - (7 - len(self.hand)))
+        chancellor_in_initial_hand = CHANCELLOR_OF_ANNEX in self.hand
 
         if NECRODOMINANCE not in self.hand and BESEECH_MIRROR not in self.hand:
             self.loss_reason = FALIED_NECRO
@@ -517,8 +519,7 @@ class GameState:
 
         initial_state = self.copy()
         initial_hand = self.hand.copy()
-        initial_summoner_beseech_count = self.hand.count(SUMMONERS_PACT) + self.hand.count(BESEECH_MIRROR)
-
+        
         lands = []
         if GEMSTONE_MINE in self.hand:
             lands.append(GEMSTONE_MINE)
@@ -550,13 +551,34 @@ class GameState:
             self.mana_source.add_mana_source('U', U_count)
             #self.debug(f'mana source: {self.mana_source}')
         
+        # 初手にChancellorがあって今ない場合、Chrome MoxにImprintしたと判定する
+        did_imprint_chancellor = chancellor_in_initial_hand and CHANCELLOR_OF_ANNEX not in self.hand
+
         # マリガン分の手札をデッキボトムに戻す
         if self.return_count > 0:
-            summoner_beseech_count = self.hand.count(SUMMONERS_PACT) + self.hand.count(BESEECH_MIRROR)
-            need_shuffle = summoner_beseech_count < initial_summoner_beseech_count
-            self.return_cards_for_mulligan()
-            if need_shuffle:
+            self.return_cards_for_mulligan(opponent_has_forces, did_imprint_chancellor)
+            # Summoner's PactやBeseechでシャッフルしていた場合は、ボトムに戻した後にシャッフルする
+            if self.did_shuffle:
                 self.shuffle_deck()
+        
+        # 相手の妨害(Force of Will, Force of Negation)の処理
+        if opponent_has_forces:
+            #opponent_force_count = self.get_opponent_force_count()
+            pact_count = self.hand.count(PACT_OF_NEGATION)
+            chancellor_count = 1 if did_imprint_chancellor or CHANCELLOR_OF_ANNEX in self.hand else 0
+            
+            while opponent_force_count > 0:
+                opponent_force_count -= 1
+                self.storm_count += 1
+                if chancellor_count > 0:
+                    chancellor_count -= 1
+                elif pact_count > 0:
+                    pact_count -= 1
+                    self.cast_pact_of_negation()
+                else:
+                    # Necroが相手に打ち消されたので失敗
+                    self.loss_reason = FAILED_NECRO_COUNTERED
+                    return False
         
         if BORNE_UPON_WIND in self.hand and self.try_generate_mana('1U', [BORNE_UPON_WIND]):
             self.cast_borne_upon_a_wind()
@@ -674,13 +696,13 @@ class GameState:
         # マリガンで戻す枚数よりも使わなかったカードの枚数が多ければTrue
         return self.return_count <= len(cards_unused)
     
-    def return_cards_for_mulligan(self):
+    def return_cards_for_mulligan(self, opponent_has_forces: bool = False, did_imprint_chancellor: bool = False):
         # 1枚だけ残したいカード
-        single_copy_cards = [MANAMORPHOSE, BORNE_UPON_WIND, DARK_RITUAL, BESEECH_MIRROR]
+        single_copy_cards = [VALAKUT_AWAKENING, MANAMORPHOSE, BORNE_UPON_WIND, DARK_RITUAL, BESEECH_MIRROR]
         # あるだけ残したいカード
         multi_copy_cards = [LOTUS_PETAL, SIMIAN_SPIRIT_GUIDE, ELVISH_SPIRIT_GUIDE, SUMMONERS_PACT]
         # 全体の優先順位
-        priority = [MANAMORPHOSE, BORNE_UPON_WIND, LOTUS_PETAL, SIMIAN_SPIRIT_GUIDE, ELVISH_SPIRIT_GUIDE, SUMMONERS_PACT, DARK_RITUAL, BESEECH_MIRROR]
+        priority = [VALAKUT_AWAKENING, MANAMORPHOSE, BORNE_UPON_WIND, LOTUS_PETAL, SIMIAN_SPIRIT_GUIDE, ELVISH_SPIRIT_GUIDE, SUMMONERS_PACT, DARK_RITUAL, BESEECH_MIRROR]
         if self.mana_source.U > 0:
             # 青マナソースがある場合はWindを優先する
             priority.remove(BORNE_UPON_WIND)
@@ -688,7 +710,24 @@ class GameState:
         
         keep_count = len(self.hand) - self.return_count
         cards_to_keep = []
-
+        pact_count = 0
+        chanceller_count = 1 if did_imprint_chancellor else 0
+        
+        # 相手がカウンターを持っている場合はPact of NegationとChancellor of Annexを優先して残す
+        if opponent_has_forces:
+            # Pactを優先して残す
+            while PACT_OF_NEGATION in self.hand and pact_count + chanceller_count < 2 and len(cards_to_keep) < keep_count:
+                cards_to_keep.append(PACT_OF_NEGATION)
+                self.hand.remove(PACT_OF_NEGATION)
+                pact_count += 1
+            
+            # 次にChancellorを1枚まで残す
+            if CHANCELLOR_OF_ANNEX in self.hand and chanceller_count == 0 and pact_count + chanceller_count < 2 and len(cards_to_keep) < keep_count:
+                cards_to_keep.append(CHANCELLOR_OF_ANNEX)
+                self.hand.remove(CHANCELLOR_OF_ANNEX)
+                chanceller_count += 1
+        
+        # 残りのカードを優先順位に従って残す
         for priority_card in priority:
             if priority_card in single_copy_cards:
                 if priority_card in self.hand and len(cards_to_keep) < keep_count:
@@ -699,6 +738,18 @@ class GameState:
                     cards_to_keep.append(priority_card)
                     self.hand.remove(priority_card)
         
+        if opponent_has_forces:
+            while PACT_OF_NEGATION in self.hand and len(cards_to_keep) < keep_count:
+                cards_to_keep.append(PACT_OF_NEGATION)
+                self.hand.remove(PACT_OF_NEGATION)
+                pact_count += 1
+            
+            if CHANCELLOR_OF_ANNEX in self.hand and chanceller_count == 0 and len(cards_to_keep) < keep_count:
+                cards_to_keep.append(CHANCELLOR_OF_ANNEX)
+                self.hand.remove(CHANCELLOR_OF_ANNEX)
+                chanceller_count += 1
+        
+        # 残りのカードをランダムに残す
         while self.hand and len(cards_to_keep) < keep_count:
             card = self.hand.pop(0)
             cards_to_keep.append(card)
@@ -999,7 +1050,7 @@ class GameState:
             self.debug("You Lose.")
             return False
     
-    def run_without_initial_hand(self, deck: list[str], draw_count: int, mulligan_until_necro: bool) -> bool:
+    def run_without_initial_hand(self, deck: list[str], draw_count: int, mulligan_until_necro: bool, opponent_has_forces: bool = False) -> bool:
         """
         初期手札が指定されていない場合のゲーム実行関数（マリガンを行う）
         
@@ -1027,10 +1078,15 @@ class GameState:
             
             self.draw_cards(7)
             
-            if self.main_phase():
+            opponent_force_count = self.get_opponent_force_count() if opponent_has_forces else 0
+            if self.main_phase(opponent_has_forces, opponent_force_count):
                 # Necroキャストに成功したらループを抜ける
                 break
+            elif self.loss_reason == FAILED_NECRO_COUNTERED:
+                # Necroをキャストしたが打ち消された場合
+                return False
         
+        # Necroをキャストできなかった場合
         if not self.did_cast_necro:
             self.debug(f"Failed to cast Necrodominance. mulligan count = {self.mulligan_count}")
             return False

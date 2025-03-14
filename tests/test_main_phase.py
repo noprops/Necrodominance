@@ -204,6 +204,42 @@ class TestMainPhase(unittest.TestCase):
         self.assertTrue(self.game.main_phase())
         self.assertEqual(self.game.mana_pool.get_total(), 0)
         self.assertEqual(self.game.mana_source.U, 1)
+    
+    def test_op_has_2counterspells_i_have_pact_chancellor_mull2(self):
+        opponent_force_count = 2
+        self.game.mulligan_count = 2
+        self.game.hand = [GEMSTONE_MINE, DARK_RITUAL, NECRODOMINANCE, PACT_OF_NEGATION, CHANCELLOR_OF_ANNEX, ELVISH_SPIRIT_GUIDE, SIMIAN_SPIRIT_GUIDE]
+        # bottom ESG and SSG
+        self.assertTrue(self.game.main_phase(True, opponent_force_count))
+    
+    def test_op_has_2counterspells_i_have_pact_chancellor_mull3_False(self):
+        opponent_force_count = 2
+        self.game.mulligan_count = 3
+        self.game.hand = [GEMSTONE_MINE, DARK_RITUAL, NECRODOMINANCE, PACT_OF_NEGATION, CHANCELLOR_OF_ANNEX, ELVISH_SPIRIT_GUIDE, SIMIAN_SPIRIT_GUIDE]
+        # bottom Chancellor, ESG and SSG
+        self.assertFalse(self.game.main_phase(True, opponent_force_count))
+    
+    def test_op_has_3counterspells_i_have_2pact_1chancellor_mull1_False(self):
+        opponent_force_count = 3
+        self.game.mulligan_count = 1
+        self.game.hand = [GEMSTONE_MINE, DARK_RITUAL, NECRODOMINANCE, PACT_OF_NEGATION, PACT_OF_NEGATION, CHANCELLOR_OF_ANNEX, ELVISH_SPIRIT_GUIDE]
+        # bottom Chancellor
+        self.assertFalse(self.game.main_phase(True, opponent_force_count))
+    
+    def test_op_has_3counterspells_i_have_2pact_1chancellor_mull1_True(self):
+        opponent_force_count = 3
+        self.game.mulligan_count = 1
+        self.game.hand = [GEMSTONE_MINE, DARK_RITUAL, NECRODOMINANCE, PACT_OF_NEGATION, PACT_OF_NEGATION, CHANCELLOR_OF_ANNEX, VAULT_OF_WHISPERS]
+        # bottom Land
+        self.assertTrue(self.game.main_phase(True, opponent_force_count))
+    
+    def test_op_has_1counterspells_i_have_1chancellor_mull1_True(self):
+        opponent_force_count = 1
+        self.game.mulligan_count = 2
+        self.game.hand = [GEMSTONE_MINE, DARK_RITUAL, BESEECH_MIRROR, CHROME_MOX, CHANCELLOR_OF_ANNEX, PACT_OF_NEGATION, DARK_RITUAL]
+        self.game.deck = [NECRODOMINANCE]
+        # bottom Pact and Dark
+        self.assertTrue(self.game.main_phase(True, opponent_force_count))
 
 if __name__ == '__main__':
     unittest.main()
