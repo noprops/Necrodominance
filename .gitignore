@@ -13,8 +13,8 @@ venv/
 env/
 ENV/
 
-# Results directory
-results/
+# Results directories
+results*/
 
 # Images directory
 imgs/
