@@ -29,86 +29,23 @@ class DeckAnalyzer:
     def __init__(self):
         self.game = GameState()
     
-    def run_multiple_simulations_with_initial_hand(self, deck: list[str], initial_hand: list[str], bottom_list: list[str] = [], draw_count: int = 19, iterations: int = 10000) -> dict:
+    def _calculate_statistics(self, wins, losses, cast_necro_count, failed_necro_count, loss_reasons, draw_count, iterations, mulligan_until_necro=False):
         """
-        マリガンなしでシミュレーションを実行する関数
+        シミュレーション結果から統計情報を計算する内部関数
         
         Args:
-            deck: デッキ（カード名のリスト）
-            initial_hand: 初期手札
-            bottom_list: デッキボトムに戻すカードのリスト
+            wins: マリガン回数ごとの勝利回数
+            losses: マリガン回数ごとの敗北回数
+            cast_necro_count: マリガン回数ごとのNecro唱えた回数
+            failed_necro_count: Necroを唱えられず負けた回数
+            loss_reasons: 負けた理由の辞書
             draw_count: ドロー数
             iterations: シミュレーション回数
+            mulligan_until_necro: マリガン戦略（Necroを唱えるまでマリガンするかどうか）
             
         Returns:
-            シミュレーション結果の統計情報を含む辞書（シンプル版）
+            統計情報を含む辞書
         """
-        # 基本関数を呼び出し
-        full_stats = self.run_multiple_simulations(deck, initial_hand, bottom_list, draw_count, False, iterations)
-        
-        # シンプルな統計情報を作成
-        stats = {
-            'draw_count': full_stats['draw_count'],
-            'total_games': full_stats['total_games'],
-            'wins': full_stats['total_wins'],
-            'win_rate': full_stats['win_rate'],
-            'losses': full_stats['total_losses'],
-            'cast_necro_count': full_stats['total_cast_necro'],
-            'failed_necro_count': full_stats['failed_necro_count'],
-            'cast_necro_rate': full_stats['cast_necro_rate'],
-            'win_after_necro_rate': full_stats['win_after_necro_rate'],
-            'loss_reasons': full_stats['loss_reasons']
-        }
-        
-        return stats
-    
-    def run_multiple_simulations(self, deck: list[str], initial_hand: list[str], bottom_list: list[str] = [], draw_count: int = 19, mulligan_until_necro: bool = False, iterations: int = 10000) -> dict:
-        # Statistics
-        # Necroを唱えて勝った回数
-        wins = defaultdict(int)
-        # Necroを唱えて負けた回数
-        losses = defaultdict(int)
-        # Necroを唱えた回数
-        cast_necro_count = defaultdict(int)
-        # Necroを唱えられず負けた回数
-        failed_necro_count = 0
-        # 負けた理由
-        loss_reasons = defaultdict(int)
-        
-        self.game.debug_print = False
-
-        for i in range(iterations):
-            self.game.reset_game()
-            random.shuffle(deck)
-            # 初期手札が指定されている場合は、run_with_initial_handを呼び出す
-            if initial_hand:
-                result = self.game.run_with_initial_hand(deck, initial_hand, bottom_list, draw_count)
-            # 初期手札が指定されていない場合は、run_without_initial_handを呼び出す
-            else:
-                result = self.game.run_without_initial_hand(deck, draw_count, mulligan_until_necro)
-            mulligan_count = self.game.mulligan_count
-            
-            # Necroを唱えたかどうかをカウント
-            if self.game.did_cast_necro:
-                cast_necro_count[mulligan_count] += 1
-            
-            # Collect results
-            if result:
-                wins[mulligan_count] += 1
-            else:
-                if self.game.loss_reason == FALIED_NECRO:
-                    # Necroを唱えられず負けた
-                    failed_necro_count += 1
-                else:
-                    # Necroを唱えてから負けた
-                    losses[mulligan_count] += 1
-                
-                # 負けた理由を記録
-                if self.game.loss_reason:
-                    loss_reasons[self.game.loss_reason] += 1
-                else:
-                    loss_reasons["Unknown"] += 1
-        
         # Calculate statistics
         total_wins = sum(wins.values())
         total_losses = sum(losses.values())
@@ -170,6 +107,155 @@ class DeckAnalyzer:
         
         return stats
     
+    def run_multiple_simulations_with_initial_hand(self, deck: list[str], initial_hand: list[str], bottom_list: list[str] = [], draw_count: int = 19, iterations: int = 10000) -> dict:
+        """
+        初期手札が指定されている場合のシミュレーションを実行する関数
+        
+        Args:
+            deck: デッキ（カード名のリスト）
+            initial_hand: 初期手札
+            bottom_list: デッキボトムに戻すカードのリスト
+            draw_count: ドロー数
+            iterations: シミュレーション回数
+            
+        Returns:
+            シミュレーション結果の統計情報を含む辞書
+        """
+        # Statistics
+        # Necroを唱えて勝った回数
+        wins = defaultdict(int)
+        # Necroを唱えて負けた回数
+        losses = defaultdict(int)
+        # Necroを唱えた回数
+        cast_necro_count = defaultdict(int)
+        # Necroを唱えられず負けた回数
+        failed_necro_count = 0
+        # 負けた理由
+        loss_reasons = defaultdict(int)
+        
+        self.game.debug_print = False
+
+        for i in range(iterations):
+            self.game.reset_game()
+            random.shuffle(deck)
+            # 初期手札が指定されている場合は、run_with_initial_handを呼び出す
+            result = self.game.run_with_initial_hand(deck, initial_hand, bottom_list, draw_count)
+            mulligan_count = self.game.mulligan_count
+            
+            # Necroを唱えたかどうかをカウント
+            if self.game.did_cast_necro:
+                cast_necro_count[mulligan_count] += 1
+            
+            # Collect results
+            if result:
+                wins[mulligan_count] += 1
+            else:
+                if self.game.loss_reason == FALIED_NECRO:
+                    # Necroを唱えられず負けた
+                    failed_necro_count += 1
+                else:
+                    # Necroを唱えてから負けた
+                    losses[mulligan_count] += 1
+                
+                # 負けた理由を記録
+                if self.game.loss_reason:
+                    loss_reasons[self.game.loss_reason] += 1
+                else:
+                    loss_reasons["Unknown"] += 1
+        
+        # 統計情報を計算
+        full_stats = self._calculate_statistics(wins, losses, cast_necro_count, failed_necro_count, loss_reasons, draw_count, iterations)
+        
+        # シンプルな統計情報を作成
+        stats = {
+            'draw_count': full_stats['draw_count'],
+            'total_games': full_stats['total_games'],
+            'wins': full_stats['total_wins'],
+            'win_rate': full_stats['win_rate'],
+            'losses': full_stats['total_losses'],
+            'cast_necro_count': full_stats['total_cast_necro'],
+            'failed_necro_count': full_stats['failed_necro_count'],
+            'cast_necro_rate': full_stats['cast_necro_rate'],
+            'win_after_necro_rate': full_stats['win_after_necro_rate'],
+            'loss_reasons': full_stats['loss_reasons']
+        }
+        
+        return stats
+    
+    def run_multiple_simulations_without_initial_hand(self, deck: list[str], draw_count: int = 19, mulligan_until_necro: bool = True, opponent_has_forces: bool = False, iterations: int = 10000) -> dict:
+        """
+        初期手札が指定されていない場合のシミュレーションを実行する関数
+        
+        Args:
+            deck: デッキ（カード名のリスト）
+            draw_count: ドロー数
+            mulligan_until_necro: Necroを唱えるまでマリガンするかどうか
+            opponent_has_forces: 相手がForceを持っているかどうか
+            iterations: シミュレーション回数
+            
+        Returns:
+            シミュレーション結果の統計情報を含む辞書
+        """
+        # Statistics
+        # Necroを唱えて勝った回数
+        wins = defaultdict(int)
+        # Necroを唱えて負けた回数
+        losses = defaultdict(int)
+        # Necroを唱えた回数
+        cast_necro_count = defaultdict(int)
+        # Necroを唱えられず負けた回数
+        failed_necro_count = 0
+        # 負けた理由
+        loss_reasons = defaultdict(int)
+        
+        self.game.debug_print = False
+
+        for i in range(iterations):
+            self.game.reset_game()
+            random.shuffle(deck)
+            # 初期手札が指定されていない場合は、run_without_initial_handを呼び出す
+            result = self.game.run_without_initial_hand(deck, draw_count, mulligan_until_necro, opponent_has_forces)
+            mulligan_count = self.game.mulligan_count
+            
+            # Necroを唱えたかどうかをカウント
+            if self.game.did_cast_necro:
+                cast_necro_count[mulligan_count] += 1
+            
+            # Collect results
+            if result:
+                wins[mulligan_count] += 1
+            else:
+                if self.game.loss_reason == FALIED_NECRO:
+                    # Necroを唱えられず負けた
+                    failed_necro_count += 1
+                else:
+                    # Necroを唱えてから負けた
+                    losses[mulligan_count] += 1
+                
+                # 負けた理由を記録
+                if self.game.loss_reason:
+                    loss_reasons[self.game.loss_reason] += 1
+                else:
+                    loss_reasons["Unknown"] += 1
+        
+        # 統計情報を計算
+        stats = self._calculate_statistics(wins, losses, cast_necro_count, failed_necro_count, loss_reasons, draw_count, iterations, mulligan_until_necro)
+        
+        # 相手がForceを持っている場合は、necro_resolve_rateを計算して追加
+        if opponent_has_forces:
+            total_cast_necro = sum(cast_necro_count.values())
+            failed_necro_countered = loss_reasons.get(FAILED_NECRO_COUNTERED, 0)
+            
+            if total_cast_necro > 0:
+                necro_resolve_rate = (total_cast_necro - failed_necro_countered) / total_cast_necro * 100
+                stats['necro_resolve_rate'] = necro_resolve_rate
+                
+                # 結果を表示
+                print(f"Necro Resolve Rate: {necro_resolve_rate:.1f}%")
+                print(f"Failed Necro Countered: {failed_necro_countered} ({failed_necro_countered/total_cast_necro*100:.1f}% of cast Necro)")
+        
+        return stats
+    
     def run_draw_count_analysis(self, deck: list[str], initial_hand: list[str], min_draw: int = 10, max_draw: int = 19, iterations: int = 10000) -> list:
         results = []
         for draw_count in range(max_draw, min_draw - 1, -1):
@@ -179,12 +265,12 @@ class DeckAnalyzer:
         
         return results
     
-    def compare_decks(self, decks: list[list[str]], deck_names: list[str], draw_count: int, iterations: int = 10000):
+    def compare_decks(self, decks: list[list[str]], deck_names: list[str], draw_count: int, opponent_has_forces: bool = False, iterations: int = 10000):
         results = []
         
         for i, deck in enumerate(decks):
             deck_name = deck_names[i]
-            stats = self.run_multiple_simulations(deck, [], [], draw_count, True, iterations)
+            stats = self.run_multiple_simulations_without_initial_hand(deck, draw_count, True, opponent_has_forces, iterations)
             
             # デッキ名を追加
             stats['deck_name'] = deck_name
@@ -195,6 +281,8 @@ class DeckAnalyzer:
         print("\nDeck Comparison Results:")
         for result in results:
             print(f"Deck: {result['deck_name']}, Win Rate: {result['win_rate']:.1f}%")
+            if opponent_has_forces and 'necro_resolve_rate' in result:
+                print(f"  Necro Resolve Rate: {result['necro_resolve_rate']:.1f}%")
         
         return results
     

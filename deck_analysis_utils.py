@@ -280,6 +280,102 @@ def compare_keep_cards_for_hand(analyzer: DeckAnalyzer, initial_hand: list[str],
     
     return results
 
+def compare_chancellor_decks_against_counterspells(analyzer: DeckAnalyzer, iterations: int = 1000000):
+    """
+    相手のデッキに打ち消し呪文（Counterspell）が入っている場合に、
+    Chancellor of the Annexを4枚追加したデッキバリエーションを比較する関数
+    
+    基本デッキ: decks/wind3_valakut3_cantor0_paradise1.txt
+    - 元のデッキリストもそのまま比較対象に含める
+    - Chancellor of the Annexを4枚追加
+    - 指定されたパターンに従って4枚のカードを抜いて60枚にする
+    - 各パターンに対してcompare_decksを実行（opponent_has_forces=Trueで実行）
+    """
+    # 基本デッキを読み込む
+    base_deck_path = 'decks/wind3_valakut3_cantor0_paradise1.txt'
+    base_deck = create_deck(base_deck_path)
+    
+    # Chancellor of the Annexを4枚追加
+    base_deck_with_chancellor = base_deck + [CHANCELLOR_OF_ANNEX] * 4
+    
+    # 抜くカードのパターンを定義
+    removal_patterns = [
+        [CHROME_MOX] * 4,
+        [CHROME_MOX] * 3 + [SUMMONERS_PACT] * 1,
+        [CHROME_MOX] * 2 + [SUMMONERS_PACT] * 2,
+        [CHROME_MOX] * 1 + [SUMMONERS_PACT] * 1 + [BESEECH_MIRROR] * 2,
+        [CHROME_MOX] * 1 + [SUMMONERS_PACT] * 1 + [VALAKUT_AWAKENING] * 2,
+        [CHROME_MOX] * 1 + [SUMMONERS_PACT] * 1 + [VALAKUT_AWAKENING] * 1 + [BESEECH_MIRROR] * 1,
+        [CHROME_MOX] * 1 + [SUMMONERS_PACT] * 1 + [VALAKUT_AWAKENING] * 1 + [BORNE_UPON_WIND] * 1,
+        
+        [UNDISCOVERED_PARADISE] * 1 + [CHROME_MOX] * 3,
+        [UNDISCOVERED_PARADISE] * 1 + [CHROME_MOX] * 2 + [SUMMONERS_PACT] * 1,
+        [UNDISCOVERED_PARADISE] * 1 + [CHROME_MOX] * 1 + [SUMMONERS_PACT] * 1 + [BESEECH_MIRROR] * 1,
+        [UNDISCOVERED_PARADISE] * 1 + [CHROME_MOX] * 1 + [SUMMONERS_PACT] * 1 + [VALAKUT_AWAKENING] * 1,
+        
+        [UNDISCOVERED_PARADISE] * 1 + [GEMSTONE_MINE] * 3,
+        [UNDISCOVERED_PARADISE] * 1 + [GEMSTONE_MINE] * 1 + [CHROME_MOX] * 2,
+    ]
+    
+    # 各パターンに対してデッキを作成
+    decks = []
+    deck_names = []
+    
+    # 元のデッキリストも追加
+    decks.append(base_deck)
+    deck_names.append("original_deck_no_chancellor")
+    
+    for i, pattern in enumerate(removal_patterns):
+        # パターン名を作成
+        pattern_name = f"chancellor_pattern_{i+1}"
+        
+        # デッキをコピー
+        new_deck = base_deck_with_chancellor.copy()
+        
+        # カードを抜く
+        for card in pattern:
+            if card in new_deck:
+                new_deck.remove(card)
+            else:
+                print(f"Warning: Card {card} not found in deck for pattern {pattern_name}")
+        
+        # パターン名にカード情報を追加
+        card_counts = {}
+        for card in pattern:
+            if card in card_counts:
+                card_counts[card] += 1
+            else:
+                card_counts[card] = 1
+        
+        pattern_desc = "_".join([f"{count}{card.replace(' ', '_')}" for card, count in card_counts.items()])
+        pattern_name = f"chancellor_minus_{pattern_desc}"
+        
+        # デッキとデッキ名を追加
+        decks.append(new_deck)
+        deck_names.append(pattern_name)
+    
+    # デッキの枚数を確認
+    for i, deck in enumerate(decks):
+        print(f"Deck {deck_names[i]}: {len(deck)} cards")
+    
+    # 比較を実行（opponent_has_forces=Trueで実行）
+    results = analyzer.compare_decks(decks, deck_names, 19, opponent_has_forces=True, iterations=iterations)
+    
+    # win_rateの昇順でソート（最も低いものが先頭に来るように）
+    results.sort(key=lambda x: x['win_rate'])
+    
+    # ソート後の結果を表示
+    print("\nDeck Comparison Results (sorted by win rate):")
+    for result in results:
+        print(f"Deck: {result['deck_name']}, Win Rate: {result['win_rate']:.1f}%")
+        if 'necro_resolve_rate' in result:
+            print(f"  Necro Resolve Rate: {result['necro_resolve_rate']:.1f}%")
+    
+    # 結果をCSVに保存
+    save_results_to_csv('compare_chancellor_decks_against_counterspells', results, DEFAULT_PRIORITY_FIELDS)
+    
+    return results
+
 if __name__ == "__main__":
     iterations = 1000000
     analyzer = DeckAnalyzer()
@@ -291,6 +387,7 @@ if __name__ == "__main__":
     #analyze_draw_counts(analyzer, iterations=100000)
     #compare_initial_hands(analyzer, iterations)
     #compare_chancellor_decks(analyzer, iterations)
+    #compare_chancellor_decks_against_counterspells(analyzer, iterations)
 
     initial_hand = [GEMSTONE_MINE, DARK_RITUAL, NECRODOMINANCE, LOTUS_PETAL, BORNE_UPON_WIND, MANAMORPHOSE, VALAKUT_AWAKENING]
     compare_keep_cards_for_hand(analyzer, initial_hand, iterations=iterations)
