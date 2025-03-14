@@ -13,7 +13,7 @@ DECK_PATHS = [
 
 # フィールドの優先順位リスト（基本とマリガン回数ごとの統計情報を含む）
 DEFAULT_PRIORITY_FIELDS = [
-    'deck_name', 'initial_hand', 'draw_count', 'total_games', 'win_rate', 'cast_necro_rate', 'win_after_necro_rate',
+    'deck_name', 'initial_hand', 'draw_count', 'total_games', 'win_rate', 'cast_necro_rate', 'win_after_necro_resolve_rate',
     'total_wins', 'total_losses', 'failed_necro_count', 'total_cast_necro', 'loss_reasons',
     # wins_mull0, wins_mull1, ...
     'wins_mull0', 'wins_mull1', 'wins_mull2', 'wins_mull3', 'wins_mull4',
@@ -76,9 +76,9 @@ class DeckAnalyzer:
         
         # Necroを唱えたあと、勝利する条件付き確率
         if total_cast_necro > 0:
-            stats['win_after_necro_rate'] = total_wins/total_cast_necro*100
+            stats['win_after_necro_resolve_rate'] = total_wins/total_cast_necro*100
         else:
-            stats['win_after_necro_rate'] = 0.0
+            stats['win_after_necro_resolve_rate'] = 0.0
 
         # Print results
         print(f"\nTest Results ({iterations} iterations, draw_count={draw_count}):")
@@ -86,7 +86,7 @@ class DeckAnalyzer:
         print(f"Total Losses: {total_losses} ({total_losses/iterations*100:.1f}%)")
         print(f"Failed to Cast Necro: {failed_necro_count} ({failed_necro_count/iterations*100:.1f}%)")
         print(f"Cast Necro: {total_cast_necro} ({stats['cast_necro_rate']:.1f}%)")
-        print(f"Win After Cast Necro: {stats['win_after_necro_rate']:.1f}%")
+        print(f"Win After Cast Necro: {stats['win_after_necro_resolve_rate']:.1f}%")
         
         # マリガン回数ごとの統計を表示
         if mulligan_until_necro:
@@ -176,7 +176,7 @@ class DeckAnalyzer:
             'cast_necro_count': full_stats['total_cast_necro'],
             'failed_necro_count': full_stats['failed_necro_count'],
             'cast_necro_rate': full_stats['cast_necro_rate'],
-            'win_after_necro_rate': full_stats['win_after_necro_rate'],
+            'win_after_necro_resolve_rate': full_stats['win_after_necro_resolve_rate'],
             'loss_reasons': full_stats['loss_reasons']
         }
         
@@ -205,6 +205,10 @@ class DeckAnalyzer:
         cast_necro_count = defaultdict(int)
         # Necroを唱えられず負けた回数
         failed_necro_count = 0
+        # Necroが打ち消された回数
+        necro_countered_count = 0
+        # Necroが解決した回数
+        necro_resolve_count = 0
         # 負けた理由
         loss_reasons = defaultdict(int)
         
@@ -220,6 +224,13 @@ class DeckAnalyzer:
             # Necroを唱えたかどうかをカウント
             if self.game.did_cast_necro:
                 cast_necro_count[mulligan_count] += 1
+                
+                # Necroが打ち消されたかどうかをチェック
+                if self.game.loss_reason == FAILED_NECRO_COUNTERED:
+                    necro_countered_count += 1
+                else:
+                    # Necroが解決した
+                    necro_resolve_count += 1
             
             # Collect results
             if result:
@@ -241,18 +252,38 @@ class DeckAnalyzer:
         # 統計情報を計算
         stats = self._calculate_statistics(wins, losses, cast_necro_count, failed_necro_count, loss_reasons, draw_count, iterations, mulligan_until_necro)
         
-        # 相手がForceを持っている場合は、necro_resolve_rateを計算して追加
-        if opponent_has_forces:
-            total_cast_necro = sum(cast_necro_count.values())
-            failed_necro_countered = loss_reasons.get(FAILED_NECRO_COUNTERED, 0)
-            
-            if total_cast_necro > 0:
-                necro_resolve_rate = (total_cast_necro - failed_necro_countered) / total_cast_necro * 100
-                stats['necro_resolve_rate'] = necro_resolve_rate
-                
-                # 結果を表示
-                print(f"Necro Resolve Rate: {necro_resolve_rate:.1f}%")
-                print(f"Failed Necro Countered: {failed_necro_countered} ({failed_necro_countered/total_cast_necro*100:.1f}% of cast Necro)")
+        # 追加の統計情報
+        total_cast_necro = sum(cast_necro_count.values())
+        total_wins = sum(wins.values())
+        
+        # cast_necro_rateは全ゲーム数に対するNecroをキャストした回数の割合
+        stats['cast_necro_rate'] = total_cast_necro / iterations * 100
+        
+        # Necroが解決した回数と打ち消された回数を追加
+        stats['necro_resolve_count'] = necro_resolve_count
+        stats['necro_countered_count'] = necro_countered_count
+        
+        # Necroをキャストした回数に対するNecroが打ち消されずに解決した回数の割合
+        if total_cast_necro > 0:
+            stats['necro_resolve_rate'] = necro_resolve_count / total_cast_necro * 100
+        else:
+            stats['necro_resolve_rate'] = 0.0
+        
+        # Necroが解決した回数に対する勝利回数の割合
+        if necro_resolve_count > 0:
+            stats['win_after_necro_resolve_rate'] = total_wins / necro_resolve_count * 100
+        else:
+            stats['win_after_necro_resolve_rate'] = 0.0
+        
+        # 結果を表示
+        print(f"Cast Necro Rate: {stats['cast_necro_rate']:.1f}%")
+        print(f"Necro Cast Count: {total_cast_necro}")
+        print(f"Necro Resolve Count: {necro_resolve_count}")
+        print(f"Necro Countered Count: {necro_countered_count}")
+        print(f"Necro Resolve Rate: {stats['necro_resolve_rate']:.1f}%")
+        if opponent_has_forces and necro_countered_count > 0:
+            print(f"Failed Necro Countered: {necro_countered_count} ({necro_countered_count/total_cast_necro*100:.1f}% of cast Necro)")
+        print(f"Win After Necro Resolve Rate: {stats['win_after_necro_resolve_rate']:.1f}%")
         
         return stats
     
