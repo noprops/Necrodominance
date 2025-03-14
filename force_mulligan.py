@@ -189,17 +189,18 @@ class ForceMulliganSimulator:
         total_force_count = sum(count * force_count for force_count, count in raw_results['force_counts'].items())
         average_force_count = total_force_count / iterations
         
-        # CSVに保存するための整形された結果を作成
-        result_dict = {
-            'total_simulations': iterations,
-            'average_force_count': average_force_count
-        }
+        # CSVに保存するための整形された結果を作成（各force_countごとに1行）
+        results_list = []
         
-        # 各Force唱えられる回数の確率を追加
         for force_count, count in raw_results['force_counts'].items():
             percentage = (count / iterations) * 100
-            result_dict[f'force_count_{force_count}'] = count
-            result_dict[f'force_count_{force_count}_percentage'] = percentage
+            result_dict = {
+                'force_count': force_count,
+                'total_simulations': iterations,
+                'count': count,
+                'percentage': percentage
+            }
+            results_list.append(result_dict)
         
         if verbose:
             # 結果の表示
@@ -214,7 +215,7 @@ class ForceMulliganSimulator:
             
             print(f"シミュレーション終了: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
         
-        return [result_dict]  # CSVに保存するためにリスト形式で返す
+        return results_list  # CSVに保存するためにリスト形式で返す
 
 if __name__ == "__main__":
     # 乱数のシードを設定（再現性のため）
