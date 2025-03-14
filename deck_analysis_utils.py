@@ -1,9 +1,8 @@
-import random
-from copy import copy
-from collections import defaultdict
 from game_state import *
 from deck_utils import get_filename_without_extension, create_deck, save_results_to_csv
 from deck_analyzer import DeckAnalyzer
+import time
+import datetime
 
 # デッキパスの定義
 DECK_PATHS = [
@@ -227,7 +226,9 @@ def compare_keep_cards_for_hand(analyzer: DeckAnalyzer, initial_hand: list[str],
     
     # 必須の3枚を取り除いたカードリストを作成
     core_cards = [GEMSTONE_MINE, DARK_RITUAL, NECRODOMINANCE]
-    remaining_cards = [card for card in initial_hand if card not in core_cards]
+    remaining_cards = initial_hand.copy()
+    for card in core_cards:
+        remaining_cards.remove(card)
     
     # ユニークなカードのセットを作成
     unique_cards = set(remaining_cards)
@@ -242,7 +243,8 @@ def compare_keep_cards_for_hand(analyzer: DeckAnalyzer, initial_hand: list[str],
     # 各カードを1枚だけ手札に残す戦略をループ
     for keep_card in unique_cards:
         # デッキボトムに送るカードリストを作成
-        bottom_list = [card for card in remaining_cards if card != keep_card]
+        bottom_list = remaining_cards.copy()
+        bottom_list.remove(keep_card)
         
         print(f"Testing strategy: Keep {keep_card}, Bottom: {', '.join(bottom_list)}")
         
@@ -279,20 +281,16 @@ def compare_keep_cards_for_hand(analyzer: DeckAnalyzer, initial_hand: list[str],
     return results
 
 if __name__ == "__main__":
-    import time
-    import datetime
-    
     iterations = 1000000
     analyzer = DeckAnalyzer()
     
     print("シミュレーション開始: ", datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
     start_time = time.time()
     
-    ## ここから
-    compare_decks(analyzer, iterations)
-    analyze_draw_counts(analyzer, iterations)
-    compare_initial_hands(analyzer, iterations)
-    compare_chancellor_decks(analyzer, iterations)
+    #compare_decks(analyzer, iterations)
+    #analyze_draw_counts(analyzer, iterations=100000)
+    #compare_initial_hands(analyzer, iterations)
+    #compare_chancellor_decks(analyzer, iterations)
 
     initial_hand = [GEMSTONE_MINE, DARK_RITUAL, NECRODOMINANCE, LOTUS_PETAL, BORNE_UPON_WIND, MANAMORPHOSE, VALAKUT_AWAKENING]
     compare_keep_cards_for_hand(analyzer, initial_hand, iterations=iterations)
@@ -302,7 +300,6 @@ if __name__ == "__main__":
     compare_keep_cards_for_hand(analyzer, initial_hand, iterations=iterations)
     initial_hand = [GEMSTONE_MINE, DARK_RITUAL, NECRODOMINANCE, LOTUS_PETAL, LOTUS_PETAL, MANAMORPHOSE, VALAKUT_AWAKENING]
     compare_keep_cards_for_hand(analyzer, initial_hand, iterations=iterations)
-    ## ここまで時間を計測
     
     end_time = time.time()
     elapsed_time = end_time - start_time

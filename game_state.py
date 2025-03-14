@@ -517,6 +517,15 @@ class GameState:
         while LOTUS_PETAL in self.hand:
             self.cast_lotus_petal()
         
+        # 手札のSummoner's Pactを唱える デッキを薄くしてシャッフルする
+        while SUMMONERS_PACT in self.hand:
+            if ELVISH_SPIRIT_GUIDE in self.deck:
+                self.cast_summoners_pact(ELVISH_SPIRIT_GUIDE)
+            elif WILD_CANTOR in self.deck:
+                self.cast_summoners_pact(WILD_CANTOR)
+            else:
+                break
+        
         return True
     
     def try_cast_beseech_necro(self, mana_cost: str) -> bool:
@@ -884,15 +893,15 @@ class GameState:
         
         return True
 
-    def run_with_initial_hand(self, deck: list[str], initial_hand: list[str], draw_count: int, bottom_list: list[str] = []) -> bool:
+    def run_with_initial_hand(self, deck: list[str], initial_hand: list[str], bottom_list: list[str], draw_count: int) -> bool:
         """
         初期手札が指定されている場合のゲーム実行関数
         
         Args:
             deck: デッキ（カード名のリスト）
             initial_hand: 初期手札
-            draw_count: ドロー数
             bottom_list: デッキボトムに戻すカードのリスト（マリガン処理をシミュレート）
+            draw_count: ドロー数
             
         Returns:
             ゲームの勝敗結果（True: 勝ち, False: 負け）
@@ -918,20 +927,22 @@ class GameState:
         
         # bottom_listが空でない場合、指定されたカードを手札からデッキボトムに移動
         if bottom_list:
-            cards_to_bottom = []
             for card in bottom_list:
                 if card in self.hand:
                     self.hand.remove(card)
-                    cards_to_bottom.append(card)
+                    self.deck.append(card)
                 else:
                     self.debug(f"Warning: Card {card} not found in hand for bottom_list")
-            
-            # カードをデッキボトムに追加
-            self.deck.extend(cards_to_bottom)
-            self.debug(f"Moved {len(cards_to_bottom)} cards to bottom of deck: {', '.join(cards_to_bottom)}")
+        
+        #print(f"self.hand = {self.hand}")
+        #print(f"self.deck = {self.deck}")
         
         if not self.main_phase():
             return False
+        
+        #print(f"after main phase self.hand = {self.hand}")
+        #print(f"after main phase self.battlefield = {self.battlefield}")
+        #print(f"after main phase self.mana_source = {self.mana_source}")
         
         if self.end_step(draw_count):
             self.debug("You Win.")
@@ -990,6 +1001,6 @@ if __name__ == "__main__":
     #initial_hand = [GEMSTONE_MINE, DARK_RITUAL, NECRODOMINANCE]
     #initial_hand = []
     #if initial_hand:
-    #    game.run_with_initial_hand(deck, initial_hand, 19)
+    #    game.run_with_initial_hand(deck, initial_hand, [], 19)
     #else:
     game.run_without_initial_hand(deck, 19, True)

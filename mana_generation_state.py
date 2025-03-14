@@ -36,6 +36,8 @@ class ManaGenerationState:
         if self.mana_pool.can_pay_pattern(required, generic):
             return [True, self.cards_used_from_hand, self.cards_imprinted, self.cards_searched]
         
+        initial_elvish_count = self.hand.count(ELVISH_SPIRIT_GUIDE)
+        
         # Summoners PactでElvishをサーチ
         while SUMMONERS_PACT in self.hand and ELVISH_SPIRIT_GUIDE in self.deck:
             self.cast_card_from_hand(SUMMONERS_PACT)
@@ -52,15 +54,16 @@ class ManaGenerationState:
             self.cast_card_from_hand(SIMIAN_SPIRIT_GUIDE)
             self.mana_pool.add_mana('R')
         
+        # Spirit Guideでマナを払えるか確認
+        if self.mana_pool.can_pay_pattern(required, generic):
+            self.mana_pool.pay_pattern(required, generic)
+            self.revert_remaining_mana(initial_elvish_count)
+            return [True, self.cards_used_from_hand, self.cards_imprinted, self.cards_searched]
+        
         if self.can_cast_sorcery:
             while LOTUS_PETAL in self.hand:
                 self.cast_card_from_hand(LOTUS_PETAL)
                 self.any_mana_source += 1
-        
-        if self.mana_pool.can_pay_pattern(required, generic):
-            self.mana_pool.pay_pattern(required, generic)
-            self.revert_remaining_mana()
-            return [True, self.cards_used_from_hand, self.cards_imprinted, self.cards_searched]
         
         total_available_mana = self.mana_pool.get_total() + self.any_mana_source + self.hand.count(CHROME_MOX) + self.hand.count(DARK_RITUAL) * 2 + self.hand.count(CABAL_RITUAL)
         total_required_mana = sum(required.values()) + generic
@@ -69,7 +72,7 @@ class ManaGenerationState:
             return [False, [], [], []]
         
         if self.try_generate_mana_recursively(required, generic):
-            self.revert_remaining_mana()
+            self.revert_remaining_mana(initial_elvish_count)
             return [True, self.cards_used_from_hand, self.cards_imprinted, self.cards_searched]
         else:
             return [False, [], [], []]
@@ -79,17 +82,22 @@ class ManaGenerationState:
         return self.can_generate_mana_pattern(required, generic)
 
     # 余ったマナを手札のSpirit GuideとLotus Petalに戻す
-    def revert_remaining_mana(self):
+    # Gは手札のESGに優先して戻す
+    # つまり、手札のESGよりもSummoner's Pactを優先して使用したことになる
+    def revert_remaining_mana(self, initial_elvish_count: int):
         while self.mana_pool.G > 0 and ELVISH_SPIRIT_GUIDE in self.cards_used_from_hand:
             self.mana_pool.G -= 1
             self.cards_used_from_hand.remove(ELVISH_SPIRIT_GUIDE)
-            if ELVISH_SPIRIT_GUIDE in self.cards_searched:
+            if initial_elvish_count > 0:
+                # 手札のElvishに戻す
+                initial_elvish_count -= 1
+                self.hand.append(ELVISH_SPIRIT_GUIDE)
+            elif ELVISH_SPIRIT_GUIDE in self.cards_searched:
+                # 手札のSummoner's Pactに戻す
                 self.cards_searched.remove(ELVISH_SPIRIT_GUIDE)
                 self.cards_used_from_hand.remove(SUMMONERS_PACT)
                 self.hand.append(SUMMONERS_PACT)
                 self.deck.append(ELVISH_SPIRIT_GUIDE)
-            else:
-                self.hand.append(ELVISH_SPIRIT_GUIDE)
         
         while self.mana_pool.R > 0 and SIMIAN_SPIRIT_GUIDE in self.cards_used_from_hand:
             self.mana_pool.R -= 1
