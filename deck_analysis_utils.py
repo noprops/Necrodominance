@@ -14,8 +14,10 @@ DECK_PATHS = [
 
 # フィールドの優先順位リスト（基本とマリガン回数ごとの統計情報を含む）
 DEFAULT_PRIORITY_FIELDS = [
-    'deck_name', 'initial_hand', 'kept_card', 'bottom_cards', 'draw_count', 'total_games', 'win_rate', 'cast_necro_rate', 'necro_resolve_rate', 'win_after_necro_resolve_rate',
-    'total_wins', 'total_losses', 'wins', 'losses', 'failed_necro_count', 'total_cast_necro', 'loss_reasons',
+    'GEMSTONE_MINE', 'UNDISCOVERED_PARADISE', 'WILD_CANTOR', 'CHROME_MOX', 'BORNE_UPON_WIND', 'VALAKUT_AWAKENING',
+    'initial_hand', 'kept_card', 'bottom_cards', 'draw_count', 'total_games', 'win_rate', 
+    'cast_necro_rate', 'total_cast_necro', 'necro_resolve_count', 'necro_countered_count', 'necro_resolve_rate', 'win_after_necro_resolve_rate',
+    'total_wins', 'total_losses', 'wins', 'losses', 'failed_necro_count', 'loss_reasons',
     # wins_mull0, wins_mull1, ...
     'wins_mull0', 'wins_mull1', 'wins_mull2', 'wins_mull3', 'wins_mull4',
     # losses_mull0, losses_mull1, ...
@@ -83,28 +85,9 @@ def create_custom_deck(gemstone_count: int, paradise_count: int, cantor_count: i
     # ベースデッキを読み込む
     base_deck_path = 'decks/wind3_valakut3_cantor1_paradise0.txt'
     base_deck = create_deck(base_deck_path)
-    
-    # 現在のカード枚数を数える
-    current_counts = {
-        GEMSTONE_MINE: 0,
-        UNDISCOVERED_PARADISE: 0,
-        WILD_CANTOR: 0,
-        CHROME_MOX: 0,
-        BORNE_UPON_WIND: 0,
-        VALAKUT_AWAKENING: 0
-    }
-    
-    for card in base_deck:
-        if card in current_counts:
-            current_counts[card] += 1
-    
-    # 新しいデッキを作成
-    new_deck = []
-    
-    # 指定されたカード以外のカードをコピー
-    for card in base_deck:
-        if card not in current_counts:
-            new_deck.append(card)
+
+    remove_cards = [GEMSTONE_MINE, UNDISCOVERED_PARADISE, WILD_CANTOR, CHROME_MOX, BORNE_UPON_WIND, VALAKUT_AWAKENING]
+    new_deck = [card for card in base_deck if card not in remove_cards]
     
     # 指定されたカードを追加
     new_deck.extend([GEMSTONE_MINE] * gemstone_count)
@@ -193,13 +176,34 @@ def compare_decks(analyzer: DeckAnalyzer, iterations: int = 1000000, opponent_ha
     # 比較を実行
     results = analyzer.compare_decks(decks, deck_names, 19, opponent_has_forces, iterations)
     
-    # win_rateの降順でソート（最も高いものが先頭に来るように）
-    results.sort(key=lambda x: x['win_rate'], reverse=True)
+    # 各結果にカード枚数情報を追加
+    for i, result in enumerate(results):
+        gemstone_count, paradise_count, cantor_count, chrome_count, wind_count, valakut_count = deck_patterns[i]
+        result['GEMSTONE_MINE'] = gemstone_count
+        result['UNDISCOVERED_PARADISE'] = paradise_count
+        result['WILD_CANTOR'] = cantor_count
+        result['CHROME_MOX'] = chrome_count
+        result['BORNE_UPON_WIND'] = wind_count
+        result['VALAKUT_AWAKENING'] = valakut_count
+        
+        # deck_nameを削除
+        if 'deck_name' in result:
+            del result['deck_name']
+    
+    results.sort(key=lambda x: x['win_rate'], reverse=False)
     
     # ソート後の結果を表示
     print("\nDeck Comparison Results (sorted by win rate):")
-    for result in results:
-        print(f"Deck: {result['deck_name']}, Win Rate: {result['win_rate']:.1f}%")
+    for i, result in enumerate(results):
+        gemstone_count = result['GEMSTONE_MINE']
+        paradise_count = result['UNDISCOVERED_PARADISE']
+        cantor_count = result['WILD_CANTOR']
+        chrome_count = result['CHROME_MOX']
+        wind_count = result['BORNE_UPON_WIND']
+        valakut_count = result['VALAKUT_AWAKENING']
+        
+        deck_desc = f"GM{gemstone_count}_UP{paradise_count}_WC{cantor_count}_CM{chrome_count}_BW{wind_count}_VA{valakut_count}"
+        print(f"Deck {i+1}: {deck_desc}, Win Rate: {result['win_rate']:.1f}%")
         if opponent_has_forces and 'necro_resolve_rate' in result:
             print(f"  Necro Resolve Rate: {result['necro_resolve_rate']:.1f}%")
     
@@ -502,7 +506,7 @@ def compare_chancellor_decks_against_counterspells(analyzer: DeckAnalyzer, itera
     return results
 
 if __name__ == "__main__":
-    iterations = 1000000
+    iterations = 10000
     analyzer = DeckAnalyzer()
     
     print("シミュレーション開始: ", datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
