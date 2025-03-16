@@ -64,6 +64,62 @@ def compare_initial_hands(analyzer: DeckAnalyzer, iterations: int = 200000):
     
     return results
 
+def create_custom_deck(gemstone_count: int, paradise_count: int, cantor_count: int, 
+                      chrome_count: int, wind_count: int, valakut_count: int) -> list:
+    """
+    指定されたカード枚数でデッキを作成する関数
+    
+    Args:
+        gemstone_count: GEMSTONE_MINEの枚数
+        paradise_count: UNDISCOVERED_PARADISEの枚数
+        cantor_count: WILD_CANTORの枚数
+        chrome_count: CHROME_MOXの枚数
+        wind_count: BORNE_UPON_WINDの枚数
+        valakut_count: VALAKUT_AWAKENINGの枚数
+        
+    Returns:
+        作成されたデッキ（カード名のリスト）
+    """
+    # ベースデッキを読み込む
+    base_deck_path = 'decks/wind3_valakut3_cantor1_paradise0.txt'
+    base_deck = create_deck(base_deck_path)
+    
+    # 現在のカード枚数を数える
+    current_counts = {
+        GEMSTONE_MINE: 0,
+        UNDISCOVERED_PARADISE: 0,
+        WILD_CANTOR: 0,
+        CHROME_MOX: 0,
+        BORNE_UPON_WIND: 0,
+        VALAKUT_AWAKENING: 0
+    }
+    
+    for card in base_deck:
+        if card in current_counts:
+            current_counts[card] += 1
+    
+    # 新しいデッキを作成
+    new_deck = []
+    
+    # 指定されたカード以外のカードをコピー
+    for card in base_deck:
+        if card not in current_counts:
+            new_deck.append(card)
+    
+    # 指定されたカードを追加
+    new_deck.extend([GEMSTONE_MINE] * gemstone_count)
+    new_deck.extend([UNDISCOVERED_PARADISE] * paradise_count)
+    new_deck.extend([WILD_CANTOR] * cantor_count)
+    new_deck.extend([CHROME_MOX] * chrome_count)
+    new_deck.extend([BORNE_UPON_WIND] * wind_count)
+    new_deck.extend([VALAKUT_AWAKENING] * valakut_count)
+    
+    # デッキの枚数を確認
+    if len(new_deck) != 60:
+        print(f"Warning: Deck has {len(new_deck)} cards, not 60.")
+    
+    return new_deck
+
 def compare_decks(analyzer: DeckAnalyzer, iterations: int = 1000000, opponent_has_forces: bool = False):
     """
     様々なデッキバリエーションを比較する関数
@@ -76,92 +132,47 @@ def compare_decks(analyzer: DeckAnalyzer, iterations: int = 1000000, opponent_ha
     Returns:
         各デッキの結果のリスト
     """
-    # ベースデッキを読み込む
-    base_deck_path = 'decks/wind3_valakut3_cantor1_paradise0.txt'
-    base_deck = create_deck(base_deck_path)
-    
     # デッキとデッキ名のリスト
     decks = []
     deck_names = []
     
-    # ベースデッキを追加
-    decks.append(base_deck.copy())
-    deck_names.append("base_wind3_valakut3_cantor1_paradise0")
-    
-    # カード名のマッピング
-    card_mapping = {
-        "cantor": WILD_CANTOR,
-        "paradise": UNDISCOVERED_PARADISE,
-        "valakut": VALAKUT_AWAKENING,
-        "wind": BORNE_UPON_WIND,
-        "chrome": CHROME_MOX
-    }
-    
-    # 変更パターンのリスト
-    patterns = [
-        # パターン1: -1 cantor +1 paradise
-        {"remove": {"cantor": 1}, "add": {"paradise": 1}},
-        
-        # パターン2: -1 valakut +1 wind
-        {"remove": {"valakut": 1}, "add": {"wind": 1}},
-        
-        # パターン3: -1 cantor +1 paradise -1 valakut +1 wind
-        {"remove": {"cantor": 1, "valakut": 1}, "add": {"paradise": 1, "wind": 1}},
-        
-        # パターン4: -1 chrome +1 wind
-        {"remove": {"chrome": 1}, "add": {"wind": 1}},
-        
-        # パターン5: -1 chrome +1 wind -1 cantor +1 paradise
-        {"remove": {"chrome": 1, "cantor": 1}, "add": {"wind": 1, "paradise": 1}},
-        
-        # パターン6: -1 chrome +1 wind -1 cantor +1 valakut
-        {"remove": {"chrome": 1, "cantor": 1}, "add": {"wind": 1, "valakut": 1}},
-        
-        # パターン7: -2 chrome +1 wind +1 paradise
-        {"remove": {"chrome": 2}, "add": {"wind": 1, "paradise": 1}},
-        
-        # パターン8: -2 chrome +1 wind +1 valakut
-        {"remove": {"chrome": 2}, "add": {"wind": 1, "valakut": 1}},
-        
-        # パターン9: -2 chrome -1 cantor +1 wind +1 valakut +1 paradise
-        {"remove": {"chrome": 2, "cantor": 1}, "add": {"wind": 1, "valakut": 1, "paradise": 1}},
-        
-        # パターン10: -2 chrome -1 cantor +1 wind +2 paradise
-        {"remove": {"chrome": 2, "cantor": 1}, "add": {"wind": 1, "paradise": 2}}
+    # デッキパターンのリスト
+    # [GEMSTONE_MINE, UNDISCOVERED_PARADISE, WILD_CANTOR, CHROME_MOX, BORNE_UPON_WIND, VALAKUT_AWAKENING]
+    deck_patterns = [
+        [4, 0, 1, 4, 3, 3],  # ベースデッキ
+        [4, 1, 0, 4, 3, 3],
+        [4, 0, 1, 4, 4, 2],
+        [4, 1, 0, 4, 4, 2],
+        [4, 0, 1, 3, 4, 3],
+        [4, 1, 0, 3, 4, 3],
+        [4, 0, 0, 3, 4, 4],
+        [4, 1, 1, 2, 4, 3],
+        [4, 1, 0, 2, 4, 4],
+        [4, 0, 1, 2, 4, 4],
+        [4, 2, 0, 2, 4, 3],
+        [3, 0, 1, 4, 4, 3],
+        [3, 0, 0, 4, 4, 4],
+        [3, 0, 1, 3, 4, 4]
     ]
     
     # 各パターンに対してデッキを作成
-    for i, pattern in enumerate(patterns):
-        # 新しいデッキを作成
-        new_deck = base_deck.copy()
+    for pattern in deck_patterns:
+        gemstone_count, paradise_count, cantor_count, chrome_count, wind_count, valakut_count = pattern
         
-        # カードを削除
-        for card_type, count in pattern["remove"].items():
-            card = card_mapping[card_type]
-            for _ in range(count):
-                if card in new_deck:
-                    new_deck.remove(card)
-                else:
-                    print(f"Warning: Card {card} not found in deck for pattern {i+1}")
-        
-        # カードを追加
-        for card_type, count in pattern["add"].items():
-            card = card_mapping[card_type]
-            for _ in range(count):
-                new_deck.append(card)
+        # デッキを作成
+        deck = create_custom_deck(
+            gemstone_count, paradise_count, cantor_count, 
+            chrome_count, wind_count, valakut_count
+        )
         
         # デッキ名を作成
-        deck_name = "base"
-        for card_type, count in pattern["remove"].items():
-            deck_name += f"_minus{count}{card_type}"
-        for card_type, count in pattern["add"].items():
-            deck_name += f"_plus{count}{card_type}"
+        deck_name = f"GM{gemstone_count}_UP{paradise_count}_WC{cantor_count}_CM{chrome_count}_BW{wind_count}_VA{valakut_count}"
         
         # デッキとデッキ名を追加
-        decks.append(new_deck)
+        decks.append(deck)
         deck_names.append(deck_name)
     
-    # デッキの枚数を確認
+    # デッキの枚数とカード構成を確認
     for i, deck in enumerate(decks):
         print(f"Deck {deck_names[i]}: {len(deck)} cards")
         
@@ -174,9 +185,10 @@ def compare_decks(analyzer: DeckAnalyzer, iterations: int = 1000000, opponent_ha
                 card_counts[card] = 1
         
         # 重要なカードの枚数を表示
-        for card_type, card in card_mapping.items():
+        important_cards = [GEMSTONE_MINE, UNDISCOVERED_PARADISE, WILD_CANTOR, CHROME_MOX, BORNE_UPON_WIND, VALAKUT_AWAKENING]
+        for card in important_cards:
             count = card_counts.get(card, 0)
-            print(f"  {card_type}: {count}")
+            print(f"  {card}: {count}")
     
     # 比較を実行
     results = analyzer.compare_decks(decks, deck_names, 19, opponent_has_forces, iterations)
@@ -496,12 +508,12 @@ if __name__ == "__main__":
     print("シミュレーション開始: ", datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
     start_time = time.time()
     
-    #compare_decks(analyzer, iterations)
+    compare_decks(analyzer, iterations)
     #analyze_draw_counts(analyzer, iterations=100000)
     #compare_initial_hands(analyzer, iterations)
     #compare_chancellor_decks(analyzer, iterations)
     #compare_chancellor_decks_against_counterspells(analyzer, iterations)
-    compare_chancellor_decks_against_counterspells(analyzer, iterations=10000)
+    #compare_chancellor_decks_against_counterspells(analyzer, iterations=10000)
     '''
     initial_hand = [GEMSTONE_MINE, DARK_RITUAL, NECRODOMINANCE, LOTUS_PETAL, BORNE_UPON_WIND, MANAMORPHOSE, VALAKUT_AWAKENING]
     compare_keep_cards_for_hand(analyzer, initial_hand, iterations=iterations)
