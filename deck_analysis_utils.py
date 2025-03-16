@@ -135,7 +135,12 @@ def compare_decks(analyzer: DeckAnalyzer, iterations: int = 1000000, opponent_ha
         [4, 2, 0, 2, 4, 3],
         [3, 0, 1, 4, 4, 3],
         [3, 0, 0, 4, 4, 4],
-        [3, 0, 1, 3, 4, 4]
+        [3, 0, 1, 3, 4, 4],
+        # 新しいパターン
+        [4, 1, 0, 3, 3, 4],  # PARADISE=1, CANTOR=0, CHROME=3, WIND=3, VALAKUT=4
+        [4, 1, 0, 4, 2, 4],  # PARADISE=1, CANTOR=0, CHROME=4, WIND=2, VALAKUT=4
+        [3, 1, 0, 4, 4, 3],  # GEMSTONE=3, PARADISE=1, CANTOR=0, CHROME=4, WIND=4, VALAKUT=3
+        [3, 1, 0, 4, 3, 4]   # GEMSTONE=3, PARADISE=1, CANTOR=0, CHROME=4, WIND=3, VALAKUT=4
     ]
     
     # 各パターンに対してデッキを作成
