@@ -284,9 +284,6 @@ class DeckAnalyzer:
             print(f"Failed Necro Countered: {necro_countered_count} ({necro_countered_count/total_cast_necro*100:.1f}% of cast Necro)")
             print(f"Win After Necro Resolve Rate: {stats['win_after_necro_resolve_rate']:.1f}%")
         else:
-            # opponent_has_forces=Falseの場合は、win_after_necro_resolve_rateはNecroをキャストした後の勝率
-            if total_cast_necro > 0:
-                stats['win_after_necro_resolve_rate'] = total_wins / total_cast_necro * 100
             print(f"Win After Necro Cast Rate: {stats['win_after_necro_resolve_rate']:.1f}%")
             
             # opponent_has_forces=Falseの場合は、不要な項目を削除

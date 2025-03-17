@@ -10,10 +10,11 @@ if not os.path.exists('imgs'):
 
 def plot_mulligan_stats():
     """
-    results/compare_decks.csvからマリガン統計をグラフ化する関数
+    results/compare_deck_variations.csvからマリガン統計をグラフ化する関数
     縦軸はマリガン回数ごとのネクロを唱えた確率（%）
+    最も勝率の高いデッキ（GEMSTONE_MINE=4, UNDISCOVERED_PARADISE=0, WILD_CANTOR=0, CHROME_MOX=4, BORNE_UPON_WIND=4, VALAKUT_AWAKENING=3）に対して作成
     """
-    csv_path = 'results/compare_decks.csv'
+    csv_path = 'results/compare_deck_variations.csv'
     if not os.path.exists(csv_path):
         print(f"Warning: {csv_path} not found. Skipping mulligan stats plot.")
         return
@@ -21,13 +22,25 @@ def plot_mulligan_stats():
     # CSVファイルを読み込む
     df = pd.read_csv(csv_path)
     
-    deck_name = 'wind3_valakut3_cantor0_paradise1'
-    # 指定したデッキの行のデータを抽出
-    deck_data = df[df['deck_name'] == deck_name]
+    # 最も勝率の高いデッキを特定（GEMSTONE_MINE=4, UNDISCOVERED_PARADISE=0, WILD_CANTOR=0, CHROME_MOX=4, BORNE_UPON_WIND=4, VALAKUT_AWAKENING=3）
+    target_deck = df[
+        (df['GEMSTONE_MINE'] == 4) & 
+        (df['UNDISCOVERED_PARADISE'] == 0) & 
+        (df['WILD_CANTOR'] == 0) & 
+        (df['CHROME_MOX'] == 4) & 
+        (df['BORNE_UPON_WIND'] == 4) & 
+        (df['VALAKUT_AWAKENING'] == 3)
+    ]
     
-    if deck_data.empty:
-        print(f"Error: No data found for {deck_name}")
+    if target_deck.empty:
+        print("Error: Target deck not found in CSV file")
         return
+    
+    # 最初の行を使用（同じ条件に複数行が一致する場合）
+    deck_data = target_deck.iloc[0:1]
+    
+    # デッキの説明を作成
+    deck_desc = f"GM4_UP0_WC0_CM4_BW4_VA3"
     
     # 必要なデータを抽出
     mulligan_counts = range(5)  # 0から4までのマリガン回数
@@ -50,7 +63,7 @@ def plot_mulligan_stats():
     rects2 = ax.bar(x + width/2, cast_necro_data, width, label='Cast Necro (%)')
     
     # グラフのタイトルと軸ラベルを設定
-    ax.set_title(f'Mulligan Statistics for {deck_name}', fontsize=16)
+    ax.set_title(f'Mulligan Statistics for {deck_desc}', fontsize=16)
     ax.set_xlabel('Mulligan Count', fontsize=14)
     ax.set_ylabel('Percentage of Total Games (%)', fontsize=14)
     ax.set_xticks(x)
@@ -104,7 +117,7 @@ def plot_mulligan_stats():
 def plot_draw_count_analysis():
     """
     results/analyze_draw_counts.csvからドロー数ごとの勝率をグラフ化する関数
-    複数のデッキに対して折れ線グラフを作成する
+    最適なデッキ（BEST_DECK_PATH）に対して折れ線グラフを作成する
     """
     csv_path = 'results/analyze_draw_counts.csv'
     if not os.path.exists(csv_path):
@@ -114,41 +127,30 @@ def plot_draw_count_analysis():
     # CSVファイルを読み込む
     df = pd.read_csv(csv_path)
     
-    # デッキ名でグループ化
-    deck_names = df['deck_name'].unique()
+    # デッキ名を取得
+    if 'deck_name' in df.columns and not df.empty:
+        deck_name = df['deck_name'].iloc[0]
+    else:
+        deck_name = "Best Deck (GM4_UP0_WC0_CM4_BW4_VA3)"
     
     # グラフの設定
     plt.figure(figsize=(12, 8))
     
-    # 色のリスト
-    colors = ['b', 'r', 'g', 'c', 'm', 'y', 'k']
-    markers = ['o', 's', '^', 'D', 'v', '<', '>']
+    # ドロー数でソート（降順）- 左から19~10になるように
+    df = df.sort_values('draw_count', ascending=False)
     
-    # 各デッキごとに折れ線グラフを作成
-    for i, deck_name in enumerate(deck_names):
-        # デッキのデータを抽出
-        deck_data = df[df['deck_name'] == deck_name]
-        
-        # ドロー数でソート（降順）- 左から19~10になるように
-        deck_data = deck_data.sort_values('draw_count', ascending=False)
-        
-        # 色とマーカーを選択（リストの範囲を超えないようにインデックスを調整）
-        color = colors[i % len(colors)]
-        marker = markers[i % len(markers)]
-        
-        # 折れ線グラフを作成
-        plt.plot(deck_data['draw_count'].values, deck_data['win_rate'].values, 
-                 f'{color}-{marker}', linewidth=2, label=deck_name)
-        
-        # 各データポイントに値を表示（デッキごとにさらに大きくずらして表示）
-        offset = i * 5.0  # デッキごとに表示位置をさらに大きくずらす
-        for _, row in deck_data.iterrows():
-            plt.text(row['draw_count'], row['win_rate'] + 1 + offset, 
-                     f"{row['win_rate']:.1f}%", 
-                     ha='center', va='bottom', fontweight='bold', color=color)
+    # 折れ線グラフを作成
+    plt.plot(df['draw_count'].values, df['win_rate'].values, 
+             'b-o', linewidth=2, label='Win Rate')
+    
+    # 各データポイントに値を表示
+    for _, row in df.iterrows():
+        plt.text(row['draw_count'], row['win_rate'] + 1, 
+                 f"{row['win_rate']:.1f}%", 
+                 ha='center', va='bottom', fontweight='bold', color='blue')
     
     # グラフのタイトルと軸ラベルを設定
-    plt.title('Win Rate by Draw Count for Multiple Decks', fontsize=16)
+    plt.title(f'Win Rate by Draw Count for {deck_name}', fontsize=16)
     plt.xlabel('Draw Count', fontsize=14)
     plt.ylabel('Win Rate (%)', fontsize=14)
     plt.grid(True, linestyle='--', alpha=0.7)
@@ -158,9 +160,6 @@ def plot_draw_count_analysis():
     
     # Y軸の範囲を0-100%に設定
     plt.ylim(0, 100)
-    
-    # 凡例を追加
-    plt.legend(fontsize=12)
     
     # グラフを保存
     plt.tight_layout()

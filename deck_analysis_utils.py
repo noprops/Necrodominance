@@ -4,13 +4,7 @@ from deck_analyzer import DeckAnalyzer
 import time
 import datetime
 
-# デッキパスの定義
-DECK_PATHS = [
-    'decks/wind4_valakut2_cantor1_paradise0.txt',
-    'decks/wind4_valakut2_cantor0_paradise1.txt',
-    'decks/wind3_valakut3_cantor1_paradise0.txt',
-    'decks/wind3_valakut3_cantor0_paradise1.txt'
-]
+BEST_DECK_PATH = 'decks/gemstone4_paradise0_cantor0_chrome4_wind4_valakut3.txt'
 
 # フィールドの優先順位リスト（基本とマリガン回数ごとの統計情報を含む）
 DEFAULT_PRIORITY_FIELDS = [
@@ -28,74 +22,27 @@ DEFAULT_PRIORITY_FIELDS = [
     'win_rate_mull0', 'win_rate_mull1', 'win_rate_mull2', 'win_rate_mull3', 'win_rate_mull4'
 ]
 
-# 既存のDeckAnalyzerクラスのメソッドを使用するため、これらの関数は不要
-
-def compare_initial_hands(analyzer: DeckAnalyzer, iterations: int = 200000):
-    """
-    プリセットされた初期手札のリストを比較する関数
-    
-    Args:
-        analyzer: DeckAnalyzerインスタンス
-        
-    Returns:
-        各初期手札の結果のリスト
-    """
-    initial_hands = [
-        [GEMSTONE_MINE, DARK_RITUAL, NECRODOMINANCE],
-        [GEMSTONE_MINE, DARK_RITUAL, NECRODOMINANCE, MANAMORPHOSE],
-        [GEMSTONE_MINE, DARK_RITUAL, NECRODOMINANCE, BORNE_UPON_WIND],
-        [GEMSTONE_MINE, DARK_RITUAL, NECRODOMINANCE, MANAMORPHOSE, BORNE_UPON_WIND],
-        [GEMSTONE_MINE, DARK_RITUAL, NECRODOMINANCE, ELVISH_SPIRIT_GUIDE],
-        [GEMSTONE_MINE, DARK_RITUAL, NECRODOMINANCE, SIMIAN_SPIRIT_GUIDE],
-        [GEMSTONE_MINE, DARK_RITUAL, NECRODOMINANCE, ELVISH_SPIRIT_GUIDE, SIMIAN_SPIRIT_GUIDE],
-        [GEMSTONE_MINE, DARK_RITUAL, NECRODOMINANCE, LOTUS_PETAL],
-        [GEMSTONE_MINE, DARK_RITUAL, NECRODOMINANCE, LOTUS_PETAL, LOTUS_PETAL],
-        [GEMSTONE_MINE, DARK_RITUAL, NECRODOMINANCE, DARK_RITUAL],
-        [GEMSTONE_MINE, DARK_RITUAL, NECRODOMINANCE, CABAL_RITUAL],
-        [GEMSTONE_MINE, DARK_RITUAL, NECRODOMINANCE, VALAKUT_AWAKENING],
-        [GEMSTONE_MINE, DARK_RITUAL, NECRODOMINANCE, BESEECH_MIRROR],
-        [GEMSTONE_MINE, DARK_RITUAL, NECRODOMINANCE, TENDRILS_OF_AGONY],
-        [GEMSTONE_MINE, DARK_RITUAL, NECRODOMINANCE, CHROME_MOX],
-        [GEMSTONE_MINE, DARK_RITUAL, NECRODOMINANCE, GEMSTONE_MINE]
-    ]
-
-    deck = create_deck('decks/wind3_valakut3_cantor0_paradise1.txt')
-    results = analyzer.compare_initial_hands(deck, initial_hands, 19, iterations)
-    
-    save_results_to_csv('compare_initial_hands', results, DEFAULT_PRIORITY_FIELDS)
-    
-    return results
-
-def create_custom_deck(gemstone_count: int, paradise_count: int, cantor_count: int, 
-                      chrome_count: int, wind_count: int, valakut_count: int) -> list:
+def create_custom_deck(card_counts: dict[str, int], base_deck_path: str = 'decks/gemstone4_paradise0_cantor1_chrome4_wind3_valakut3.txt') -> list:
     """
     指定されたカード枚数でデッキを作成する関数
     
     Args:
-        gemstone_count: GEMSTONE_MINEの枚数
-        paradise_count: UNDISCOVERED_PARADISEの枚数
-        cantor_count: WILD_CANTORの枚数
-        chrome_count: CHROME_MOXの枚数
-        wind_count: BORNE_UPON_WINDの枚数
-        valakut_count: VALAKUT_AWAKENINGの枚数
+        card_counts: カード名と枚数の辞書 (例: {GEMSTONE_MINE: 4, CHROME_MOX: 4})
+        base_deck_path: ベースデッキのファイルパス
         
     Returns:
         作成されたデッキ（カード名のリスト）
     """
     # ベースデッキを読み込む
-    base_deck_path = 'decks/wind3_valakut3_cantor1_paradise0.txt'
     base_deck = create_deck(base_deck_path)
 
-    remove_cards = [GEMSTONE_MINE, UNDISCOVERED_PARADISE, WILD_CANTOR, CHROME_MOX, BORNE_UPON_WIND, VALAKUT_AWAKENING]
+    # 辞書のキーに含まれるカードをベースデッキから削除
+    remove_cards = list(card_counts.keys())
     new_deck = [card for card in base_deck if card not in remove_cards]
     
     # 指定されたカードを追加
-    new_deck.extend([GEMSTONE_MINE] * gemstone_count)
-    new_deck.extend([UNDISCOVERED_PARADISE] * paradise_count)
-    new_deck.extend([WILD_CANTOR] * cantor_count)
-    new_deck.extend([CHROME_MOX] * chrome_count)
-    new_deck.extend([BORNE_UPON_WIND] * wind_count)
-    new_deck.extend([VALAKUT_AWAKENING] * valakut_count)
+    for card, count in card_counts.items():
+        new_deck.extend([card] * count)
     
     # デッキの枚数を確認
     if len(new_deck) != 60:
@@ -126,6 +73,10 @@ def compare_decks(analyzer: DeckAnalyzer, iterations: int = 1000000, opponent_ha
         [4, 1, 0, 4, 3, 3],
         [4, 0, 1, 4, 4, 2],
         [4, 1, 0, 4, 4, 2],
+        [4, 1, 0, 4, 2, 4],
+        [4, 0, 0, 4, 4, 3],
+        [4, 0, 0, 4, 3, 4],
+        [4, 1, 0, 3, 3, 4],
         [4, 0, 1, 3, 4, 3],
         [4, 1, 0, 3, 4, 3],
         [4, 0, 0, 3, 4, 4],
@@ -135,12 +86,7 @@ def compare_decks(analyzer: DeckAnalyzer, iterations: int = 1000000, opponent_ha
         [4, 2, 0, 2, 4, 3],
         [3, 0, 1, 4, 4, 3],
         [3, 0, 0, 4, 4, 4],
-        [3, 0, 1, 3, 4, 4],
-        # 新しいパターン
-        [4, 1, 0, 3, 3, 4],  # PARADISE=1, CANTOR=0, CHROME=3, WIND=3, VALAKUT=4
-        [4, 1, 0, 4, 2, 4],  # PARADISE=1, CANTOR=0, CHROME=4, WIND=2, VALAKUT=4
-        [3, 1, 0, 4, 4, 3],  # GEMSTONE=3, PARADISE=1, CANTOR=0, CHROME=4, WIND=4, VALAKUT=3
-        [3, 1, 0, 4, 3, 4]   # GEMSTONE=3, PARADISE=1, CANTOR=0, CHROME=4, WIND=3, VALAKUT=4
+        [3, 0, 1, 3, 4, 4]
     ]
     
     # 各パターンに対してデッキを作成
@@ -148,10 +94,15 @@ def compare_decks(analyzer: DeckAnalyzer, iterations: int = 1000000, opponent_ha
         gemstone_count, paradise_count, cantor_count, chrome_count, wind_count, valakut_count = pattern
         
         # デッキを作成
-        deck = create_custom_deck(
-            gemstone_count, paradise_count, cantor_count, 
-            chrome_count, wind_count, valakut_count
-        )
+        card_counts = {
+            GEMSTONE_MINE: gemstone_count,
+            UNDISCOVERED_PARADISE: paradise_count,
+            WILD_CANTOR: cantor_count,
+            CHROME_MOX: chrome_count,
+            BORNE_UPON_WIND: wind_count,
+            VALAKUT_AWAKENING: valakut_count
+        }
+        deck = create_custom_deck(card_counts)
         
         # デッキ名を作成
         deck_name = f"GM{gemstone_count}_UP{paradise_count}_WC{cantor_count}_CM{chrome_count}_BW{wind_count}_VA{valakut_count}"
@@ -219,34 +170,94 @@ def compare_decks(analyzer: DeckAnalyzer, iterations: int = 1000000, opponent_ha
 
 def analyze_draw_counts(analyzer: DeckAnalyzer, iterations: int = 100000):
     """
-    プリセットされたデッキのリストに対してドロー数分析を実行する関数
+    最適なデッキ（BEST_DECK_PATH）に対してドロー数分析を実行する関数
     
     Args:
         analyzer: DeckAnalyzerインスタンス
         
     Returns:
-        各デッキ・各ドロー数ごとの結果のリスト
+        各ドロー数ごとの結果のリスト
     """
     initial_hand = [GEMSTONE_MINE, DARK_RITUAL, NECRODOMINANCE]
-    all_results = []
     
-    for deck_path in DECK_PATHS:
-        print(f"\nAnalyzing deck: {deck_path}")
-        deck = create_deck(deck_path)
-        deck_name = get_filename_without_extension(deck_path)
-        
-        # 100,000回のイテレーションで実行
-        results = analyzer.run_draw_count_analysis(deck, initial_hand, min_draw=10, max_draw=19, iterations=iterations)
-        
-        # 各結果にデッキ名を追加
-        for result in results:
-            result['deck_name'] = deck_name
-            all_results.append(result)
-    
-    save_results_to_csv('analyze_draw_counts', all_results, DEFAULT_PRIORITY_FIELDS)
-    
-    return all_results
+    print(f"\nAnalyzing best deck: {BEST_DECK_PATH}")
+    deck = create_deck(BEST_DECK_PATH)
+    deck_name = get_filename_without_extension(BEST_DECK_PATH)
 
+    results = analyzer.run_draw_count_analysis(deck, initial_hand, min_draw=10, max_draw=19, iterations=iterations)
+    
+    # 各結果にデッキ名を追加
+    for result in results:
+        result['deck_name'] = deck_name
+    
+    save_results_to_csv('analyze_draw_counts', results, DEFAULT_PRIORITY_FIELDS)
+    
+    return results
+
+def compare_initial_hands(analyzer: DeckAnalyzer, iterations: int = 1000000):
+    """
+    プリセットされた初期手札のリストを比較する関数
+    
+    Args:
+        analyzer: DeckAnalyzerインスタンス
+        iterations: シミュレーション回数
+        
+    Returns:
+        各初期手札の結果のリスト
+    """
+    # 基本の初期手札
+    base_hand = [GEMSTONE_MINE, DARK_RITUAL, NECRODOMINANCE]
+    
+    # 初期手札のリストを作成
+    initial_hands = []
+    
+    # 0枚加える
+    initial_hands.append(base_hand.copy())
+    
+    # 1枚加える
+    one_card_additions = [
+        GEMSTONE_MINE,
+        ELVISH_SPIRIT_GUIDE,
+        SIMIAN_SPIRIT_GUIDE,
+        SUMMONERS_PACT,
+        DARK_RITUAL,
+        CABAL_RITUAL,
+        CHROME_MOX,
+        LOTUS_PETAL,
+        MANAMORPHOSE,
+        BORNE_UPON_WIND,
+        VALAKUT_AWAKENING,
+        BESEECH_MIRROR,
+        TENDRILS_OF_AGONY
+    ]
+    
+    for card in one_card_additions:
+        hand = base_hand.copy()
+        hand.append(card)
+        initial_hands.append(hand)
+    
+    # 2枚加える
+    two_card_additions = [
+        [ELVISH_SPIRIT_GUIDE, SIMIAN_SPIRIT_GUIDE],
+        [LOTUS_PETAL, LOTUS_PETAL],
+        [MANAMORPHOSE, BORNE_UPON_WIND],
+        [LOTUS_PETAL, BORNE_UPON_WIND]
+    ]
+    
+    for cards in two_card_additions:
+        hand = base_hand.copy()
+        hand.extend(cards)
+        initial_hands.append(hand)
+    
+    # ベストなデッキを使用
+    deck = create_deck(BEST_DECK_PATH)
+    results = analyzer.compare_initial_hands(deck, initial_hands, 19, iterations)
+    
+    save_results_to_csv('compare_initial_hands', results, DEFAULT_PRIORITY_FIELDS)
+    
+    return results
+
+###todo
 def compare_chancellor_decks(analyzer: DeckAnalyzer, iterations: int = 1000000):
     """
     Chancellor of the Annexを4枚追加したデッキバリエーションを比較する関数
@@ -511,14 +522,14 @@ def compare_chancellor_decks_against_counterspells(analyzer: DeckAnalyzer, itera
     return results
 
 if __name__ == "__main__":
-    iterations = 10000
+    iterations = 1000000
     analyzer = DeckAnalyzer()
     
     print("シミュレーション開始: ", datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
     start_time = time.time()
     
-    compare_decks(analyzer, iterations)
-    #analyze_draw_counts(analyzer, iterations=100000)
+    #compare_decks(analyzer, iterations)
+    analyze_draw_counts(analyzer, iterations=100000)
     #compare_initial_hands(analyzer, iterations)
     #compare_chancellor_decks(analyzer, iterations)
     #compare_chancellor_decks_against_counterspells(analyzer, iterations)

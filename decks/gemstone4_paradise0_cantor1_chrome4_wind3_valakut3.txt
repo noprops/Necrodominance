@@ -12,6 +12,6 @@
 4 Cabal Ritual
 4 Necrodominance
 4 Beseech the Mirror
-4 Borne Upon a Wind
-2 Valakut Awakening
+3 Borne Upon a Wind
+3 Valakut Awakening
 1 Tendrils of Agony
