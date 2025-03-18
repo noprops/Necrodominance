@@ -34,6 +34,7 @@ class GameState:
         self.battlefield = []
         self.graveyard = []
         self.any_mana_sources = []
+        self.used_any_mana_sources = [] # 使用済みのAny Mana Source
 
         self.mulligan_count = 0 # マリガンした回数
         self.return_count = 0 # マリガンで戻すカードの枚数
@@ -65,6 +66,7 @@ class GameState:
         self.battlefield = other.battlefield.copy()
         self.graveyard = other.graveyard.copy()
         self.any_mana_sources = other.any_mana_sources.copy()
+        self.used_any_mana_sources = other.used_any_mana_sources.copy()
         
         self.mulligan_count = other.mulligan_count
         self.return_count = other.return_count
@@ -81,24 +83,42 @@ class GameState:
         if self.shuffle_enabled:
             random.shuffle(self.deck)
             self.did_shuffle = True
-
+    
+    # Any Mana Sourceを追加する
     def add_any_mana_source(self, mana_source: str):
         self.mana_source.ANY += 1
         self.any_mana_sources.append(mana_source)
     
+    # Any Manaを生成したコールバック
     def did_generate_any_mana(self):
         if GEMSTONE_MINE in self.any_mana_sources:
             self.any_mana_sources.remove(GEMSTONE_MINE)
+            self.used_any_mana_sources.append(GEMSTONE_MINE)
         elif UNDISCOVERED_PARADISE in self.any_mana_sources:
             self.any_mana_sources.remove(UNDISCOVERED_PARADISE)
+            self.used_any_mana_sources.append(UNDISCOVERED_PARADISE)
         elif WILD_CANTOR in self.any_mana_sources:
             self.any_mana_sources.remove(WILD_CANTOR)
+            self.used_any_mana_sources.append(WILD_CANTOR)
             self.battlefield.remove(WILD_CANTOR)
             self.graveyard.append(WILD_CANTOR)
         elif LOTUS_PETAL in self.any_mana_sources:
             self.any_mana_sources.remove(LOTUS_PETAL)
+            self.used_any_mana_sources.append(LOTUS_PETAL)
             self.battlefield.remove(LOTUS_PETAL)
             self.graveyard.append(LOTUS_PETAL)
+    
+    # colorを出すために使用したAny Mana Sourceを元に戻す
+    def revert_used_any_mana_source(self, color: str):
+        self.mana_source.ANY += 1
+        # any_mana_colorsから指定された色を1つだけ削除
+        if color in self.mana_source.any_mana_colors:
+            self.mana_source.any_mana_colors.remove(color)
+        card = self.used_any_mana_sources.pop()
+        self.any_mana_sources.append(card)
+        if card == WILD_CANTOR or card == LOTUS_PETAL:
+            self.graveyard.remove(card)
+            self.battlefield.append(card)
     
     def debug(self, message: str) -> None:
         """Debug print function"""
@@ -545,11 +565,13 @@ class GameState:
         
         #self.debug(f'mana pool after casting necro: {self.mana_pool}')
         # Mana Poolの浮きUをMana Sourceに移動
-        if self.mana_pool.U > 0:
-            U_count = self.mana_pool.U
-            self.mana_pool.U = 0
-            self.mana_source.add_mana_source('U', U_count)
-            #self.debug(f'mana source: {self.mana_source}')
+        while self.mana_pool.U > 0:
+            self.mana_pool.U -= 1
+            # Uを出すためにAny Mana Sourceを使った場合
+            if 'U' in self.mana_source.any_mana_colors:
+                self.revert_used_any_mana_source('U')
+            else:
+                self.mana_source.add_mana_source('U')
         
         # 初手にChancellorがあって今ない場合、Chrome MoxにImprintしたと判定する
         did_imprint_chancellor = chancellor_in_initial_hand and CHANCELLOR_OF_ANNEX not in self.hand
@@ -580,63 +602,20 @@ class GameState:
                     self.loss_reason = FAILED_NECRO_COUNTERED
                     return False
         
-        if BORNE_UPON_WIND in self.hand and self.try_generate_mana('1U', [BORNE_UPON_WIND]):
-            self.cast_borne_upon_a_wind()
-        
-        # 手札のLotus Petalを唱える
-        while LOTUS_PETAL in self.hand:
-            self.cast_lotus_petal()
-        
-        # 手札のSummoner's Pactを唱える デッキを薄くしてシャッフルする
-        while SUMMONERS_PACT in self.hand:
-            if ELVISH_SPIRIT_GUIDE in self.deck:
-                self.cast_summoners_pact(ELVISH_SPIRIT_GUIDE)
-            elif WILD_CANTOR in self.deck:
-                self.cast_summoners_pact(WILD_CANTOR)
-            else:
-                break
-        
+        # Necro is resolved
         return True
-    
-    def try_cast_beseech_necro(self, mana_cost: str) -> bool:
-        casting_cards = [BESEECH_MIRROR]
-        if 'U' in mana_cost:
-            casting_cards.append(BORNE_UPON_WIND)
-        
-        #self.debug(f'before try generate mana {mana_cost} mana_pool: {self.mana_pool}')
-        if self.try_generate_mana(mana_cost, casting_cards):
-            if self.try_sacrifice_bargain():
-                #self.debug('cast beseech into necro')
-                #self.debug(self.mana_pool)
-                self.mana_pool.pay_mana('1BBB')
-                self.cast_beseech()
-                # Cast Necro from deck
-                self.cast_necro(False)
-                return True
-            else:
-                if CHROME_MOX in self.hand:
-                    self.cast_chrome_mox('')
-                    return self.try_cast_beseech_necro(mana_cost)
-                elif LOTUS_PETAL in self.hand:
-                    #self.debug('cast petal for bargain')
-                    self.cast_lotus_petal()
-                    return self.try_cast_beseech_necro(mana_cost)
-                else:
-                    # no bargain
-                    return False
-        return False
     
     def try_cast_necro(self, initial_hand: list[str]) -> bool:
         initial_state = self.copy()
 
         if NECRODOMINANCE in self.hand:
-            mana_patterns = ['UBBB', 'BBB']
-            for pattern in mana_patterns:
-                casting_cards = [NECRODOMINANCE]
-                if 'U' in pattern:
-                    casting_cards.append(BORNE_UPON_WIND)
-                
-                if self.try_generate_mana(pattern, casting_cards):
+            # 生成するマナとcasting_cardsのパターン
+            patterns = [
+                ('UBBB', [NECRODOMINANCE, PACT_OF_NEGATION, BORNE_UPON_WIND]),
+                ('BBB', [NECRODOMINANCE])
+            ]
+            for mana_cost, casting_cards in patterns:
+                if self.try_generate_mana(mana_cost, casting_cards):
                     self.mana_pool.pay_mana('BBB')
                     # Cast Necro from hand
                     self.cast_necro(True)
@@ -645,20 +624,22 @@ class GameState:
                     self.copy_from(initial_state)
             
         elif BESEECH_MIRROR in self.hand:
-            mana_patterns = ['1UBBB', '1BBB']
-            for pattern in mana_patterns:
-                if self.try_cast_beseech_necro(pattern) and self.validate_hand_count_after_necro(initial_hand):
+            patterns = [
+                ('1UBBB', [BESEECH_MIRROR, PACT_OF_NEGATION, BORNE_UPON_WIND]),
+                ('1BBB', [BESEECH_MIRROR])
+            ]
+            for mana_cost, casting_cards in patterns:
+                if self.try_cast_beseech_into_necro(mana_cost, casting_cards) and self.validate_hand_count_after_necro(initial_hand):
                     return True
                 self.copy_from(initial_state)
                 #self.debug(f'failed to cast beseech into necro: mana_pool: {self.mana_pool}')
             
-            mana_patterns = ['1UBBBBBB', '1BBBBBB']
-            for pattern in mana_patterns:
-                casting_cards = [BESEECH_MIRROR]
-                if 'U' in pattern:
-                    casting_cards.append(BORNE_UPON_WIND)
-                
-                if self.try_generate_mana(pattern, casting_cards):
+            patterns = [
+                ('1UBBBBBB', [BESEECH_MIRROR, PACT_OF_NEGATION, BORNE_UPON_WIND]),
+                ('1BBBBBB', [BESEECH_MIRROR])
+            ]
+            for mana_cost, casting_cards in patterns:
+                if self.try_generate_mana(mana_cost, casting_cards):
                     self.mana_pool.pay_mana('1BBBBBB')
                     self.cast_beseech()
                     # Search Necro from deck
@@ -683,6 +664,31 @@ class GameState:
         #self.debug('Failed to cast necro.')
         return False
     
+    def try_cast_beseech_into_necro(self, mana_cost: str, casting_cards: list[str]) -> bool:
+        #self.debug(f'before try generate mana {mana_cost} mana_pool: {self.mana_pool}')
+        if self.try_generate_mana(mana_cost, casting_cards):
+            if self.try_sacrifice_bargain():
+                #self.debug('cast beseech into necro')
+                #self.debug(self.mana_pool)
+                self.mana_pool.pay_mana('1BBB')
+                self.cast_beseech()
+                # Cast Necro from deck
+                self.cast_necro(False)
+                return True
+            else:
+                # bargainがない場合
+                if CHROME_MOX in self.hand:
+                    self.cast_chrome_mox('')
+                    return self.try_cast_beseech_into_necro(mana_cost, casting_cards)
+                elif LOTUS_PETAL in self.hand:
+                    #self.debug('cast petal for bargain')
+                    self.cast_lotus_petal()
+                    return self.try_cast_beseech_into_necro(mana_cost, casting_cards)
+                else:
+                    # no bargain
+                    return False
+        return False
+
     def validate_hand_count_after_necro(self, initial_hand: list[str]) -> bool:
         # 初期手札に含まれていて使わなかったカード
         cards_unused = []
@@ -758,7 +764,55 @@ class GameState:
         self.hand = cards_to_keep
         self.deck.extend(cards_to_return)
     
-    def validate_hand(self):
+    # main phaseにネクロが解決した後、手札の呪文を唱える
+    def cast_spells_after_necro_resolved(self, cast_summoners_pact: bool):
+        # 手札のBorne Upon a Windを唱えられるなら唱える
+        if BORNE_UPON_WIND in self.hand and self.try_generate_mana('1U', [BORNE_UPON_WIND]):
+            self.cast_borne_upon_a_wind()
+        
+        # 手札のLotus Petalを唱える
+        while LOTUS_PETAL in self.hand:
+            self.cast_lotus_petal()
+        
+        # 手札のChrome MoxにPactか2枚目以降のWindを刻印
+        if CHROME_MOX in self.hand:
+            if PACT_OF_NEGATION in self.hand:
+                # もうNecroは解決済なのでPactを刻印する
+                self.cast_chrome_mox(PACT_OF_NEGATION)
+            elif self.hand.count(BORNE_UPON_WIND) >= 2:
+                self.cast_chrome_mox(BORNE_UPON_WIND)
+        
+        # 手札のSummoner's Pactを唱える
+        if cast_summoners_pact:
+            while SUMMONERS_PACT in self.hand:
+                if ELVISH_SPIRIT_GUIDE in self.deck:
+                    self.cast_summoners_pact(ELVISH_SPIRIT_GUIDE)
+                elif WILD_CANTOR in self.deck:
+                    self.cast_summoners_pact(WILD_CANTOR)
+                else:
+                    break
+    
+    def end_step(self, draw_count: int) -> bool:
+        if not self.did_cast_wind:
+            self.can_cast_sorcery = False
+        
+        self.mana_pool.clear()
+
+        self.draw_cards(draw_count)
+        
+        # Show drawn cards
+        self.debug("\n=== self.hand in end step ===")
+        for card in self.hand:
+            self.debug(card)
+        self.debug("==================\n")
+        
+        # Basic validation
+        if not self.validate_hand_in_end_step():
+            return False
+        
+        return self.try_cast_tendril()
+    
+    def validate_hand_in_end_step(self):
         # Count cards
         simian_count = self.hand.count(SIMIAN_SPIRIT_GUIDE)
         elvish_count = self.hand.count(ELVISH_SPIRIT_GUIDE)
@@ -775,6 +829,7 @@ class GameState:
             return False
         
         if manamorphose_count == 0 and wind_count == 0 and valakut_count == 0:
+            # Manamorphose, Borne Upon a Wind, Valakutがすべてない場合
             self.loss_reason = FAILED_VALAKUT_AND_WIND
             return False
         
@@ -791,26 +846,6 @@ class GameState:
                 return False
         
         return True
-
-    def end_step(self, draw_count: int) -> bool:
-        if not self.did_cast_wind:
-            self.can_cast_sorcery = False
-        
-        self.mana_pool.clear()
-
-        self.draw_cards(draw_count)
-        
-        # Show drawn cards
-        self.debug("\n=== Initial Hand ===")
-        for card in self.hand:
-            self.debug(card)
-        self.debug("==================\n")
-        
-        # Basic validation
-        if not self.validate_hand():
-            return False
-        
-        return self.try_cast_tendril()
     
     def can_generate_mana(self, color: str) -> bool:
         if self.mana_pool.get_colored_mana_count(color) > 0:
@@ -992,7 +1027,7 @@ class GameState:
         
         return True
 
-    def run_with_initial_hand(self, deck: list[str], initial_hand: list[str], bottom_list: list[str], draw_count: int) -> bool:
+    def run_with_initial_hand(self, deck: list[str], initial_hand: list[str], bottom_list: list[str], draw_count: int, cast_summoners_pact_before_draw: bool = False) -> bool:
         """
         初期手札が指定されている場合のゲーム実行関数
         
@@ -1036,12 +1071,15 @@ class GameState:
         #print(f"self.hand = {self.hand}")
         #print(f"self.deck = {self.deck}")
         
-        if not self.main_phase():
+        if not self.main_phase(False):
             return False
         
+        self.cast_spells_after_necro_resolved(cast_summoners_pact_before_draw)
+
         #print(f"after main phase self.hand = {self.hand}")
         #print(f"after main phase self.battlefield = {self.battlefield}")
         #print(f"after main phase self.mana_source = {self.mana_source}")
+        #print(f"len(self.deck) = {len(self.deck)}")
         
         if self.end_step(draw_count):
             self.debug("You Win.")
@@ -1050,7 +1088,7 @@ class GameState:
             self.debug("You Lose.")
             return False
     
-    def run_without_initial_hand(self, deck: list[str], draw_count: int, mulligan_until_necro: bool, opponent_has_forces: bool = False) -> bool:
+    def run_without_initial_hand(self, deck: list[str], draw_count: int, mulligan_until_necro: bool, opponent_has_forces: bool = False, cast_summoners_pact_before_draw: bool = False) -> bool:
         """
         初期手札が指定されていない場合のゲーム実行関数（マリガンを行う）
         
@@ -1079,11 +1117,13 @@ class GameState:
             self.draw_cards(7)
             
             opponent_force_count = self.get_opponent_force_count() if opponent_has_forces else 0
-            if self.main_phase(opponent_has_forces, opponent_force_count):
-                # Necroキャストに成功したらループを抜ける
+            if self.main_phase(opponent_has_forces, opponent_force_count, False):
+                # Necroキャストに成功した場合
+                self.cast_spells_after_necro_resolved(cast_summoners_pact_before_draw)
+                # ループを抜ける
                 break
             elif self.loss_reason == FAILED_NECRO_COUNTERED:
-                # Necroをキャストしたが打ち消された場合
+                # Necroをキャストしたが打ち消された場合は失敗で終了
                 return False
         
         # Necroをキャストできなかった場合
@@ -1100,11 +1140,11 @@ class GameState:
 
 if __name__ == "__main__":
     game = GameState()
-    deck = create_deck('decks/wind4_valakut2_cantor1.txt')
+    deck = create_deck('decks/gemstone4_paradise0_cantor0_chrome4_wind4_valakut3.txt')
     random.shuffle(deck)
-    #initial_hand = [GEMSTONE_MINE, DARK_RITUAL, NECRODOMINANCE]
+    initial_hand = [GEMSTONE_MINE, DARK_RITUAL, NECRODOMINANCE, SUMMONERS_PACT]
     #initial_hand = []
-    #if initial_hand:
-    #    game.run_with_initial_hand(deck, initial_hand, [], 19)
-    #else:
-    game.run_without_initial_hand(deck, 19, True)
+    if initial_hand:
+        game.run_with_initial_hand(deck, initial_hand, [], 19, False)
+    else:
+        game.run_without_initial_hand(deck, 19, True)

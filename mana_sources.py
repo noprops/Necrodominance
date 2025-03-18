@@ -8,6 +8,7 @@ class ManaSources:
         self.G = 0
         self.ANY = 0
         self.did_generate_any_mana = None
+        self.any_mana_colors = []  # any_mana_sourceから出したマナの色を記録するリスト
     
     def copy(self):
         new_sources = ManaSources(self.mana_pool)
@@ -17,6 +18,7 @@ class ManaSources:
         new_sources.R = self.R
         new_sources.G = self.G
         new_sources.ANY = self.ANY
+        new_sources.any_mana_colors = self.any_mana_colors.copy()  # リストのコピーを作成
         #new_sources.did_generate_any_mana = None
         return new_sources
     
@@ -27,6 +29,7 @@ class ManaSources:
         self.R = 0
         self.G = 0
         self.ANY = 0
+        self.any_mana_colors = []  # 空のリストに初期化
     
     def get_total(self) -> int:
         return self.W + self.U + self.B + self.R + self.G + self.ANY
@@ -37,8 +40,14 @@ class ManaSources:
         else:
             return 0
     
-    def generate_any_mana(self, count: int):
+    def generate_any_mana(self, count: int, color: str):
         self.ANY -= count
+        # 色が指定されていれば、any_mana_colorsに追加
+        if color:
+            for _ in range(count):
+                self.any_mana_colors.append(color)
+        
+        # コールバックが存在すれば呼ぶ
         if self.did_generate_any_mana:
             for _ in range(count):
                 self.did_generate_any_mana()
@@ -67,7 +76,7 @@ class ManaSources:
         else:
             setattr(self, color, 0)
             remaining = amount - source_count
-            self.generate_any_mana(remaining)
+            self.generate_any_mana(remaining, color)
         
         self.mana_pool.add_mana(color, amount)
     
@@ -84,6 +93,15 @@ class ManaSources:
                 mana_str += f"+ANY{self.ANY}"
             else:
                 mana_str = f"ANY{self.ANY}"
+        
+        # Add any_mana_colors if present
+        if self.any_mana_colors:
+            # リストを文字列に変換
+            colors_str = ''.join(self.any_mana_colors)
+            if mana_str:
+                mana_str += f" (Used ANY for: {colors_str})"
+            else:
+                mana_str = f"Used ANY for: {colors_str}"
         
         if not mana_str:
             return ''

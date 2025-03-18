@@ -12,7 +12,8 @@ DECK_PATHS = [
 # フィールドの優先順位リスト（基本とマリガン回数ごとの統計情報を含む）
 DEFAULT_PRIORITY_FIELDS = [
     'deck_name', 'initial_hand', 'draw_count', 'total_games', 'win_rate', 'cast_necro_rate', 'necro_resolve_rate', 'win_after_necro_resolve_rate',
-    'total_wins', 'total_losses', 'total_cast_necro', 'failed_necro_count', 'necro_resolve_count', 'necro_countered_count', 'loss_reasons',
+    'total_wins', 'total_losses', 'total_cast_necro', 'failed_necro_count', 'necro_resolve_count', 'necro_countered_count',
+    FALIED_NECRO, FAILED_NECRO_COUNTERED, FAILED_VALAKUT_AND_WIND, FAILED_WIND_AFTER_VALAKUT, FAILED_TENDRILS_AFTER_WIND,
     # wins_mull0, wins_mull1, ...
     'wins_mull0', 'wins_mull1', 'wins_mull2', 'wins_mull3', 'wins_mull4',
     # losses_mull0, losses_mull1, ...
@@ -58,9 +59,12 @@ class DeckAnalyzer:
             'total_losses': total_losses,
             'failed_necro_count': failed_necro_count,
             'total_cast_necro': total_cast_necro,
-            'cast_necro_rate': total_cast_necro/iterations*100,
-            'loss_reasons': dict(loss_reasons)
+            'cast_necro_rate': total_cast_necro/iterations*100
         }
+        
+        # 各loss_reasonごとに欄を作成
+        for reason in [FALIED_NECRO, FAILED_NECRO_COUNTERED, FAILED_VALAKUT_AND_WIND, FAILED_WIND_AFTER_VALAKUT, FAILED_TENDRILS_AFTER_WIND]:
+            stats[reason] = loss_reasons[reason]
         
         # マリガン回数ごとの統計情報を展開して追加
         for m in range(5):
@@ -174,9 +178,12 @@ class DeckAnalyzer:
             'cast_necro_count': full_stats['total_cast_necro'],
             'failed_necro_count': full_stats['failed_necro_count'],
             'cast_necro_rate': full_stats['cast_necro_rate'],
-            'win_after_necro_resolve_rate': full_stats['win_after_necro_resolve_rate'],
-            'loss_reasons': full_stats['loss_reasons']
+            'win_after_necro_resolve_rate': full_stats['win_after_necro_resolve_rate']
         }
+        
+        # 各loss_reasonごとの欄を追加
+        for reason in [FALIED_NECRO, FAILED_NECRO_COUNTERED, FAILED_VALAKUT_AND_WIND, FAILED_WIND_AFTER_VALAKUT, FAILED_TENDRILS_AFTER_WIND]:
+            stats[reason] = full_stats[reason]
         
         return stats
     

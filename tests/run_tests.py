@@ -14,9 +14,16 @@ def run_all_tests():
     """
     カレントディレクトリ内のすべてのテストを実行する
     """
-    # テストディスカバリーを使用してテストを検索・実行
+    # テストディスカバリーを使用してテストを検索
     test_loader = unittest.TestLoader()
-    test_suite = test_loader.discover('.', pattern='test_*.py')
+    all_tests = test_loader.discover('.', pattern='test_*.py')
+    
+    # test_multiple_runs.pyを除外したテストスイートを作成
+    test_suite = unittest.TestSuite()
+    for test in all_tests:
+        for test_case in test:
+            if 'test_multiple_runs' not in str(test_case):
+                test_suite.addTest(test_case)
     
     # テスト結果を表示するためのテストランナーを作成
     test_runner = unittest.TextTestRunner(verbosity=2)

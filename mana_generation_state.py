@@ -82,22 +82,22 @@ class ManaGenerationState:
         return self.can_generate_mana_pattern(required, generic)
 
     # 余ったマナを手札のSpirit GuideとLotus Petalに戻す
-    # Gは手札のESGに優先して戻す
-    # つまり、手札のESGよりもSummoner's Pactを優先して使用したことになる
     def revert_remaining_mana(self, initial_elvish_count: int):
+        # Gは手札のSummoner's Pactに優先して戻す
+        # つまり、手札のSummoner's PactよりもElvishを優先して使用したことになる
         while self.mana_pool.G > 0 and ELVISH_SPIRIT_GUIDE in self.cards_used_from_hand:
             self.mana_pool.G -= 1
             self.cards_used_from_hand.remove(ELVISH_SPIRIT_GUIDE)
-            if initial_elvish_count > 0:
-                # 手札のElvishに戻す
-                initial_elvish_count -= 1
-                self.hand.append(ELVISH_SPIRIT_GUIDE)
-            elif ELVISH_SPIRIT_GUIDE in self.cards_searched:
+            if ELVISH_SPIRIT_GUIDE in self.cards_searched:
                 # 手札のSummoner's Pactに戻す
                 self.cards_searched.remove(ELVISH_SPIRIT_GUIDE)
                 self.cards_used_from_hand.remove(SUMMONERS_PACT)
                 self.hand.append(SUMMONERS_PACT)
                 self.deck.append(ELVISH_SPIRIT_GUIDE)
+            elif initial_elvish_count > 0:
+                # 手札のElvishに戻す
+                initial_elvish_count -= 1
+                self.hand.append(ELVISH_SPIRIT_GUIDE)
         
         while self.mana_pool.R > 0 and SIMIAN_SPIRIT_GUIDE in self.cards_used_from_hand:
             self.mana_pool.R -= 1
@@ -225,7 +225,7 @@ class ManaGenerationState:
                     if self.try_generate_colored_mana(color, required, generic):
                         return True
                     self.copy_from(initial_state)
-
+                
                 if color != 'R' and self.mana_pool.R > 0:
                     self.mana_pool.R -= 1
                     self.cast_card_from_hand(WILD_CANTOR)
