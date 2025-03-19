@@ -11,24 +11,20 @@ from card_constants import *
 FALIED_NECRO = "Failed to cast Necrodominance"
 FAILED_NECRO_COUNTERED = "Failed to resolve Necrodominance due to counter spell"
 
-# Wind関連の失敗理由
-FAILED_WIND_WITH_BESEECH_OR_TENDRILS = "Cast Borne Upon a Wind but failed to cast Tendrils, with Beseech or Tendrils in hand"
-FAILED_WIND_WITHOUT_BESEECH_OR_TENDRILS = "Cast Borne Upon a Wind but failed to cast Tendrils, without Beseech or Tendrils in hand"
+# Wind唱えた後の失敗理由
+CAST_WIND_FAILED_TENDRILS_WITH_BESEECH_OR_TENDRILS = "Cast Borne Upon a Wind but failed to cast Tendrils, with Beseech or Tendrils in hand"
+CAST_WIND_FAILED_TENDRILS_WITHOUT_BESEECH_OR_TENDRILS = "Cast Borne Upon a Wind but failed to cast Tendrils, without Beseech or Tendrils in hand"
 
-# Valakut関連の失敗理由
-FAILED_VALAKUT_WITH_WIND = "Cast Valakut but failed to cast Borne Upon a Wind, with Wind in hand"
-FAILED_VALAKUT_WITHOUT_WIND = "Cast Valakut but failed to cast Borne Upon a Wind, without Wind in hand"
+# Valakut唱えた後の失敗理由
+CAST_VALAKUT_FAILED_WIND_WITH_WIND = "Cast Valakut but failed to cast Borne Upon a Wind, with Wind in hand"
+CAST_VALAKUT_FAILED_WIND_WITHOUT_WIND = "Cast Valakut but failed to cast Borne Upon a Wind, without Wind in hand"
 
-# 両方とも唱えられなかった場合
-FAILED_WITH_WIND_AND_VALAKUT = "Failed to cast both Valakut and Borne Upon a Wind, with both in hand"
-FAILED_WITH_WIND_WITHOUT_VALAKUT = "Failed to cast both Valakut and Borne Upon a Wind, with Wind but without Valakut"
-FAILED_WITHOUT_WIND_WITH_VALAKUT = "Failed to cast both Valakut and Borne Upon a Wind, without Wind but with Valakut"
-FAILED_WITHOUT_WIND_AND_VALAKUT = "Failed to cast both Valakut and Borne Upon a Wind, without both"
+# WindもValakutも唱えられなかった場合
+FAILED_CAST_BOTH_WITH_WIND_AND_VALAKUT = "Failed to cast both Valakut and Borne Upon a Wind, with both in hand"
+FAILED_CAST_BOTH_WITH_WIND_WITHOUT_VALAKUT = "Failed to cast both Valakut and Borne Upon a Wind, with Wind but without Valakut"
+FAILED_CAST_BOTH_WITHOUT_WIND_WITH_VALAKUT = "Failed to cast both Valakut and Borne Upon a Wind, without Wind but with Valakut"
+FAILED_CAST_BOTH_WITHOUT_WIND_AND_VALAKUT = "Failed to cast both Valakut and Borne Upon a Wind, without both"
 
-# 後方互換性のための定義
-FAILED_VALAKUT_AND_WIND = FAILED_WITH_WIND_AND_VALAKUT
-FAILED_WIND_AFTER_VALAKUT = FAILED_VALAKUT_WITH_WIND
-FAILED_TENDRILS_AFTER_WIND = FAILED_WIND_WITH_BESEECH_OR_TENDRILS
 
 class GameState:
     def __init__(self):
@@ -951,31 +947,31 @@ class GameState:
             # 2マナ出ない場合
             if wind_count > 0:
                 if valakut_count > 0:
-                    self.loss_reason = FAILED_WITH_WIND_AND_VALAKUT
+                    self.loss_reason = FAILED_CAST_BOTH_WITH_WIND_AND_VALAKUT
                 else:
-                    self.loss_reason = FAILED_WITH_WIND_WITHOUT_VALAKUT
+                    self.loss_reason = FAILED_CAST_BOTH_WITH_WIND_WITHOUT_VALAKUT
             else:
                 if valakut_count > 0:
-                    self.loss_reason = FAILED_WITHOUT_WIND_WITH_VALAKUT
+                    self.loss_reason = FAILED_CAST_BOTH_WITHOUT_WIND_WITH_VALAKUT
                 else:
-                    self.loss_reason = FAILED_WITHOUT_WIND_AND_VALAKUT
+                    self.loss_reason = FAILED_CAST_BOTH_WITHOUT_WIND_AND_VALAKUT
             return False
         
         if manamorphose_count == 0 and wind_count == 0 and valakut_count == 0:
             # Manamorphose, Borne Upon a Wind, Valakutがすべてない場合
-            self.loss_reason = FAILED_WITHOUT_WIND_AND_VALAKUT
+            self.loss_reason = FAILED_CAST_BOTH_WITHOUT_WIND_AND_VALAKUT
             return False
         
         if manamorphose_count == 0 and wind_count > 0 and valakut_count == 0:
             # windだけあって青が出ない場合
             if not self.mana_source.can_generate_mana('U'):
-                self.loss_reason = FAILED_WITH_WIND_WITHOUT_VALAKUT
+                self.loss_reason = FAILED_CAST_BOTH_WITH_WIND_WITHOUT_VALAKUT
                 return False
         
         if manamorphose_count == 0 and wind_count == 0 and valakut_count > 0:
             # Valakutだけあって3マナ出ない場合
             if available_mana_total < 3:
-                self.loss_reason = FAILED_WITHOUT_WIND_WITH_VALAKUT
+                self.loss_reason = FAILED_CAST_BOTH_WITHOUT_WIND_WITH_VALAKUT
                 return False
         
         return True
@@ -1161,29 +1157,29 @@ class GameState:
             if self.did_cast_wind:
                 # Windを唱えた場合
                 if BESEECH_MIRROR in self.hand or TENDRILS_OF_AGONY in self.hand:
-                    self.loss_reason = FAILED_WIND_WITH_BESEECH_OR_TENDRILS
+                    self.loss_reason = CAST_WIND_FAILED_TENDRILS_WITH_BESEECH_OR_TENDRILS
                 else:
-                    self.loss_reason = FAILED_WIND_WITHOUT_BESEECH_OR_TENDRILS
+                    self.loss_reason = CAST_WIND_FAILED_TENDRILS_WITHOUT_BESEECH_OR_TENDRILS
             else:
                 # Windを唱えられなかった場合
                 if self.did_cast_valakut:
                     # Valakutを唱えた場合
                     if BORNE_UPON_WIND in self.hand:
-                        self.loss_reason = FAILED_VALAKUT_WITH_WIND
+                        self.loss_reason = CAST_VALAKUT_FAILED_WIND_WITH_WIND
                     else:
-                        self.loss_reason = FAILED_VALAKUT_WITHOUT_WIND
+                        self.loss_reason = CAST_VALAKUT_FAILED_WIND_WITHOUT_WIND
                 else:
                     # WindもValakutも唱えていない場合
                     if BORNE_UPON_WIND in self.hand:
                         if VALAKUT_AWAKENING in self.hand:
-                            self.loss_reason = FAILED_WITH_WIND_AND_VALAKUT
+                            self.loss_reason = FAILED_CAST_BOTH_WITH_WIND_AND_VALAKUT
                         else:
-                            self.loss_reason = FAILED_WITH_WIND_WITHOUT_VALAKUT
+                            self.loss_reason = FAILED_CAST_BOTH_WITH_WIND_WITHOUT_VALAKUT
                     else:
                         if VALAKUT_AWAKENING in self.hand:
-                            self.loss_reason = FAILED_WITHOUT_WIND_WITH_VALAKUT
+                            self.loss_reason = FAILED_CAST_BOTH_WITHOUT_WIND_WITH_VALAKUT
                         else:
-                            self.loss_reason = FAILED_WITHOUT_WIND_AND_VALAKUT
+                            self.loss_reason = FAILED_CAST_BOTH_WITHOUT_WIND_AND_VALAKUT
             return False
         
         return True

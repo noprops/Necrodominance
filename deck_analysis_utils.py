@@ -13,7 +13,11 @@ DEFAULT_PRIORITY_FIELDS = [
     'initial_hand', 'kept_card', 'bottom_cards', 'cast_summoners_pact_before_draw', 'draw_count', 'total_games', 'win_rate', 
     'cast_necro_rate', 'total_cast_necro', 'cast_necro_count', 'necro_resolve_count', 'necro_countered_count', 'necro_resolve_rate', 'win_after_necro_resolve_rate',
     'total_wins', 'total_losses', 'wins', 'losses', 'failed_necro_count',
-    FALIED_NECRO, FAILED_NECRO_COUNTERED, FAILED_VALAKUT_AND_WIND, FAILED_WIND_AFTER_VALAKUT, FAILED_TENDRILS_AFTER_WIND,
+    FALIED_NECRO, FAILED_NECRO_COUNTERED, 
+    FAILED_CAST_BOTH_WITH_WIND_AND_VALAKUT, FAILED_CAST_BOTH_WITH_WIND_WITHOUT_VALAKUT, 
+    FAILED_CAST_BOTH_WITHOUT_WIND_WITH_VALAKUT, FAILED_CAST_BOTH_WITHOUT_WIND_AND_VALAKUT,
+    CAST_VALAKUT_FAILED_WIND_WITH_WIND, CAST_VALAKUT_FAILED_WIND_WITHOUT_WIND,
+    CAST_WIND_FAILED_TENDRILS_WITH_BESEECH_OR_TENDRILS, CAST_WIND_FAILED_TENDRILS_WITHOUT_BESEECH_OR_TENDRILS,
     # wins_mull0, wins_mull1, ...
     'wins_mull0', 'wins_mull1', 'wins_mull2', 'wins_mull3', 'wins_mull4',
     # losses_mull0, losses_mull1, ...
@@ -668,7 +672,13 @@ def analyze_summoners_pact_casting(analyzer: DeckAnalyzer, initial_hand: list[st
     }
     
     # 各loss_reasonごとの欄を追加
-    for reason in [FALIED_NECRO, FAILED_NECRO_COUNTERED, FAILED_VALAKUT_AND_WIND, FAILED_WIND_AFTER_VALAKUT, FAILED_TENDRILS_AFTER_WIND]:
+    for reason in [
+        FALIED_NECRO, FAILED_NECRO_COUNTERED, 
+        FAILED_CAST_BOTH_WITH_WIND_AND_VALAKUT, FAILED_CAST_BOTH_WITH_WIND_WITHOUT_VALAKUT, 
+        FAILED_CAST_BOTH_WITHOUT_WIND_WITH_VALAKUT, FAILED_CAST_BOTH_WITHOUT_WIND_AND_VALAKUT,
+        CAST_VALAKUT_FAILED_WIND_WITH_WIND, CAST_VALAKUT_FAILED_WIND_WITHOUT_WIND,
+        CAST_WIND_FAILED_TENDRILS_WITH_BESEECH_OR_TENDRILS, CAST_WIND_FAILED_TENDRILS_WITHOUT_BESEECH_OR_TENDRILS
+    ]:
         result_with_cast[reason] = loss_reasons[reason]
     results.append(result_with_cast)
     
@@ -704,7 +714,7 @@ def analyze_summoners_pact_casting(analyzer: DeckAnalyzer, initial_hand: list[st
     }
 
 if __name__ == "__main__":
-    iterations = 10000
+    iterations = 1000000
     analyzer = DeckAnalyzer()
     
     print("シミュレーション開始: ", datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))

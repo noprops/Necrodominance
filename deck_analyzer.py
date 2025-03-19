@@ -13,7 +13,11 @@ DECK_PATHS = [
 DEFAULT_PRIORITY_FIELDS = [
     'deck_name', 'initial_hand', 'draw_count', 'total_games', 'win_rate', 'cast_necro_rate', 'necro_resolve_rate', 'win_after_necro_resolve_rate',
     'total_wins', 'total_losses', 'total_cast_necro', 'failed_necro_count', 'necro_resolve_count', 'necro_countered_count',
-    FALIED_NECRO, FAILED_NECRO_COUNTERED, FAILED_VALAKUT_AND_WIND, FAILED_WIND_AFTER_VALAKUT, FAILED_TENDRILS_AFTER_WIND,
+    FALIED_NECRO, FAILED_NECRO_COUNTERED, 
+    FAILED_CAST_BOTH_WITH_WIND_AND_VALAKUT, FAILED_CAST_BOTH_WITH_WIND_WITHOUT_VALAKUT, 
+    FAILED_CAST_BOTH_WITHOUT_WIND_WITH_VALAKUT, FAILED_CAST_BOTH_WITHOUT_WIND_AND_VALAKUT,
+    CAST_VALAKUT_FAILED_WIND_WITH_WIND, CAST_VALAKUT_FAILED_WIND_WITHOUT_WIND,
+    CAST_WIND_FAILED_TENDRILS_WITH_BESEECH_OR_TENDRILS, CAST_WIND_FAILED_TENDRILS_WITHOUT_BESEECH_OR_TENDRILS,
     # wins_mull0, wins_mull1, ...
     'wins_mull0', 'wins_mull1', 'wins_mull2', 'wins_mull3', 'wins_mull4',
     # losses_mull0, losses_mull1, ...
@@ -63,7 +67,13 @@ class DeckAnalyzer:
         }
         
         # 各loss_reasonごとに欄を作成
-        for reason in [FALIED_NECRO, FAILED_NECRO_COUNTERED, FAILED_VALAKUT_AND_WIND, FAILED_WIND_AFTER_VALAKUT, FAILED_TENDRILS_AFTER_WIND]:
+        for reason in [
+            FALIED_NECRO, FAILED_NECRO_COUNTERED, 
+            FAILED_CAST_BOTH_WITH_WIND_AND_VALAKUT, FAILED_CAST_BOTH_WITH_WIND_WITHOUT_VALAKUT, 
+            FAILED_CAST_BOTH_WITHOUT_WIND_WITH_VALAKUT, FAILED_CAST_BOTH_WITHOUT_WIND_AND_VALAKUT,
+            CAST_VALAKUT_FAILED_WIND_WITH_WIND, CAST_VALAKUT_FAILED_WIND_WITHOUT_WIND,
+            CAST_WIND_FAILED_TENDRILS_WITH_BESEECH_OR_TENDRILS, CAST_WIND_FAILED_TENDRILS_WITHOUT_BESEECH_OR_TENDRILS
+        ]:
             stats[reason] = loss_reasons[reason]
         
         # マリガン回数ごとの統計情報を展開して追加
@@ -182,7 +192,13 @@ class DeckAnalyzer:
         }
         
         # 各loss_reasonごとの欄を追加
-        for reason in [FALIED_NECRO, FAILED_NECRO_COUNTERED, FAILED_VALAKUT_AND_WIND, FAILED_WIND_AFTER_VALAKUT, FAILED_TENDRILS_AFTER_WIND]:
+        for reason in [
+            FALIED_NECRO, FAILED_NECRO_COUNTERED, 
+            FAILED_CAST_BOTH_WITH_WIND_AND_VALAKUT, FAILED_CAST_BOTH_WITH_WIND_WITHOUT_VALAKUT, 
+            FAILED_CAST_BOTH_WITHOUT_WIND_WITH_VALAKUT, FAILED_CAST_BOTH_WITHOUT_WIND_AND_VALAKUT,
+            CAST_VALAKUT_FAILED_WIND_WITH_WIND, CAST_VALAKUT_FAILED_WIND_WITHOUT_WIND,
+            CAST_WIND_FAILED_TENDRILS_WITH_BESEECH_OR_TENDRILS, CAST_WIND_FAILED_TENDRILS_WITHOUT_BESEECH_OR_TENDRILS
+        ]:
             stats[reason] = full_stats[reason]
         
         return stats
