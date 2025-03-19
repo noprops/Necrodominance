@@ -217,6 +217,7 @@ def compare_initial_hands(analyzer: DeckAnalyzer, iterations: int = 1000000):
     initial_hands.append(base_hand.copy())
     
     # 1枚加える
+    '''
     one_card_additions = [
         GEMSTONE_MINE,
         ELVISH_SPIRIT_GUIDE,
@@ -232,6 +233,11 @@ def compare_initial_hands(analyzer: DeckAnalyzer, iterations: int = 1000000):
         BESEECH_MIRROR,
         TENDRILS_OF_AGONY
     ]
+    '''
+    one_card_additions = [
+        DARK_RITUAL,
+        CABAL_RITUAL
+    ]
     
     for card in one_card_additions:
         hand = base_hand.copy()
@@ -239,6 +245,7 @@ def compare_initial_hands(analyzer: DeckAnalyzer, iterations: int = 1000000):
         initial_hands.append(hand)
     
     # 2枚加える
+    '''
     two_card_additions = [
         [ELVISH_SPIRIT_GUIDE, SIMIAN_SPIRIT_GUIDE],
         [LOTUS_PETAL, LOTUS_PETAL],
@@ -250,6 +257,7 @@ def compare_initial_hands(analyzer: DeckAnalyzer, iterations: int = 1000000):
         hand = base_hand.copy()
         hand.extend(cards)
         initial_hands.append(hand)
+    '''
     
     # ベストなデッキを使用
     deck = create_deck(BEST_DECK_PATH)
@@ -696,7 +704,7 @@ def analyze_summoners_pact_casting(analyzer: DeckAnalyzer, initial_hand: list[st
     }
 
 if __name__ == "__main__":
-    iterations = 1000000
+    iterations = 10000
     analyzer = DeckAnalyzer()
     
     print("シミュレーション開始: ", datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
@@ -704,12 +712,12 @@ if __name__ == "__main__":
     
     #compare_decks(analyzer, iterations)
     #analyze_draw_counts(analyzer, iterations=100000)
-    #compare_initial_hands(analyzer, iterations)
+    compare_initial_hands(analyzer, iterations)
     #compare_chancellor_decks(analyzer, iterations)
     #compare_chancellor_decks_against_counterspells(analyzer, iterations)
     #compare_chancellor_decks_against_counterspells(analyzer, iterations=10000)
 
-    analyze_summoners_pact_casting(analyzer, initial_hand=[GEMSTONE_MINE, DARK_RITUAL, NECRODOMINANCE, SUMMONERS_PACT], iterations= 10000)
+    #analyze_summoners_pact_casting(analyzer, initial_hand=[GEMSTONE_MINE, DARK_RITUAL, NECRODOMINANCE, SUMMONERS_PACT], iterations= 10000)
     '''
     initial_hand = [GEMSTONE_MINE, DARK_RITUAL, NECRODOMINANCE, LOTUS_PETAL, BORNE_UPON_WIND, MANAMORPHOSE, VALAKUT_AWAKENING]
     compare_keep_cards_for_hand(analyzer, initial_hand, iterations=iterations)

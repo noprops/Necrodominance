@@ -244,6 +244,34 @@ class TestGenerateMana(unittest.TestCase):
         self.assertEqual(self.game.mana_pool.B, 0)
         self.assertEqual(self.game.mana_pool.R, 0)
         self.assertEqual(self.game.mana_pool.G, 0)
+    
+    def test_try_generate_mana_BBB_with_petal_dark(self):
+        self.game.battlefield = []
+        self.game.hand = [LOTUS_PETAL, DARK_RITUAL]
+        self.game.did_cast_wind = False
+        self.game.can_cast_sorcery = True
+
+        self.assertTrue(self.game.try_generate_mana('BBB', []))
+
+        self.assertEqual(self.game.mana_pool.W, 0)
+        self.assertEqual(self.game.mana_pool.U, 0)
+        self.assertEqual(self.game.mana_pool.B, 3)
+        self.assertEqual(self.game.mana_pool.R, 0)
+        self.assertEqual(self.game.mana_pool.G, 0)
+    
+    def test_try_generate_mana_BBB_with_petal_elvish_cabal(self):
+        self.game.battlefield = []
+        self.game.hand = [LOTUS_PETAL, ELVISH_SPIRIT_GUIDE, CABAL_RITUAL]
+        self.game.did_cast_wind = False
+        self.game.can_cast_sorcery = True
+
+        self.assertTrue(self.game.try_generate_mana('BBB', []))
+
+        self.assertEqual(self.game.mana_pool.W, 0)
+        self.assertEqual(self.game.mana_pool.U, 0)
+        self.assertEqual(self.game.mana_pool.B, 3)
+        self.assertEqual(self.game.mana_pool.R, 0)
+        self.assertEqual(self.game.mana_pool.G, 0)
 
 if __name__ == '__main__':
     unittest.main()

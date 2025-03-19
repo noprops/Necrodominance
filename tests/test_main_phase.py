@@ -187,7 +187,8 @@ class TestMainPhase(unittest.TestCase):
         
         self.assertTrue(self.game.main_phase())
         self.assertEqual(self.game.mana_pool.get_total(), 0)
-        self.assertEqual(self.game.mana_source.U, 1)
+        self.assertEqual(self.game.mana_source.ANY, 1)
+        self.assertTrue(GEMSTONE_MINE in self.game.any_mana_sources)
     
     def test_necro_BBB_no_chrome_true(self):
         self.game.hand = [GEMSTONE_MINE, DARK_RITUAL, CHROME_MOX, BORNE_UPON_WIND, NECRODOMINANCE]
