@@ -247,7 +247,12 @@ class GameState:
                         self.cast_wild_cantor()
                         cards_to_use.remove(WILD_CANTOR)
                         continue
-                return False
+                error_msg = f"ERROR in generate_mana_pattern: Failed to generate enough {color} mana\n"
+                error_msg += f"required: {required_count}, current: {self.mana_pool.get_colored_mana_count(color)}\n"
+                error_msg += f"mana_pool: {self.mana_pool}, mana_source: {self.mana_source}\n"
+                error_msg += f"cards_to_use: {cards_to_use}, hand: {self.hand}"
+                print(error_msg)
+                raise RuntimeError(error_msg)
             
             # その色の必要な点数のマナをいったんtmp_poolに移す
             self.mana_pool.remove_mana(color, required_count)
@@ -294,18 +299,31 @@ class GameState:
             self.mana_source.generate_mana('B')
         
         while self.mana_pool.get_total() < requiredB + generic:
+            did_generate_mana = False
             for color in ['B', 'W', 'U', 'R', 'G']:
                 if self.mana_source.can_generate_mana(color):
                     self.mana_source.generate_mana(color)
+                    did_generate_mana = True
                     break
-            return False
+            if not did_generate_mana:
+                error_msg = f"ERROR in generate_mana_pattern: Failed to generate enough mana for generic cost\n"
+                error_msg += f"required: {requiredB} black + {generic} generic, current total: {self.mana_pool.get_total()}\n"
+                error_msg += f"mana_pool: {self.mana_pool}, mana_source: {self.mana_source}\n"
+                error_msg += f"cards_to_use: {cards_to_use}, hand: {self.hand}"
+                print(error_msg)
+                raise RuntimeError(error_msg)
         
         if requiredB + generic <= self.mana_pool.get_total():
             # tmp_poolのマナを元に戻す
             self.mana_pool.transfer_from(tmp_pool)
             return True
         else:
-            return False
+            error_msg = f"ERROR in generate_mana_pattern: Failed to generate enough mana after all attempts\n"
+            error_msg += f"required: {requiredB} black + {generic} generic, current total: {self.mana_pool.get_total()}\n"
+            error_msg += f"mana_pool: {self.mana_pool}, mana_source: {self.mana_source}\n"
+            error_msg += f"cards_to_use: {cards_to_use}, hand: {self.hand}"
+            print(error_msg)
+            raise RuntimeError(error_msg)
         
         '''
         requiredB = required['B']
