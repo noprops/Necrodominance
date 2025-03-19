@@ -382,5 +382,42 @@ class TestMultipleRuns(unittest.TestCase):
             self.assertGreater(win_rate_b, win_rate_a, 
                               f"初期手札B（ELVISH_SPIRIT_GUIDE）の勝率（{win_rate_b:.2f}%）が初期手札A（SUMMONERS_PACT）の勝率（{win_rate_a:.2f}%）より高くありません")
 
+    def test_dark_vs_cabal(self):
+        """
+        初期手札AとBの勝率を比較するテスト
+        A: [GEMSTONE_MINE, DARK_RITUAL, NECRODOMINANCE, DARK_RITUAL]
+        B: [GEMSTONE_MINE, DARK_RITUAL, NECRODOMINANCE, CABAL_RITUAL]
+        
+        DARK_RITUALとCABAL_RITUALのどちらが勝率が高いかを比較する
+        """
+        print("\n" + "="*80)
+        print(f"テスト: {self._testMethodName}")
+        print("="*80)
+        
+        # 初期手札A: [GEMSTONE_MINE, DARK_RITUAL, NECRODOMINANCE, DARK_RITUAL]
+        initial_hand_a = [GEMSTONE_MINE, DARK_RITUAL, NECRODOMINANCE, DARK_RITUAL]
+        # 初期手札B: [GEMSTONE_MINE, DARK_RITUAL, NECRODOMINANCE, CABAL_RITUAL]
+        initial_hand_b = [GEMSTONE_MINE, DARK_RITUAL, NECRODOMINANCE, CABAL_RITUAL]
+        
+        # 勝率を比較（Summoner's Pactを唱えない）
+        win_rate_a, win_rate_b = self.compare_initial_hands(initial_hand_a, initial_hand_b, cast_summoners_pact=False)
+        
+        # 勝率の差を表示
+        diff = win_rate_a - win_rate_b
+        print("\n結果サマリー:")
+        print(f"初期手札A（DARK_RITUAL x2）の勝率: {win_rate_a:.2f}%")
+        print(f"初期手札B（DARK_RITUAL + CABAL_RITUAL）の勝率: {win_rate_b:.2f}%")
+        print(f"勝率の差（A - B）: {diff:.2f}%")
+        print(f"勝率が高いのは: {'A (DARK_RITUAL x2)' if diff > 0 else 'B (DARK_RITUAL + CABAL_RITUAL)'}")
+        print("="*80)
+        
+        # 勝率の高い方を確認
+        if win_rate_a > win_rate_b:
+            self.assertGreater(win_rate_a, win_rate_b, 
+                              f"初期手札A（DARK_RITUAL x2）の勝率（{win_rate_a:.2f}%）が初期手札B（DARK_RITUAL + CABAL_RITUAL）の勝率（{win_rate_b:.2f}%）より高くありません")
+        else:
+            self.assertGreater(win_rate_b, win_rate_a, 
+                              f"初期手札B（DARK_RITUAL + CABAL_RITUAL）の勝率（{win_rate_b:.2f}%）が初期手札A（DARK_RITUAL x2）の勝率（{win_rate_a:.2f}%）より高くありません")
+
 if __name__ == '__main__':
     unittest.main()
