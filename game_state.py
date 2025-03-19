@@ -46,6 +46,13 @@ class GameState:
         self.did_cast_wind = False
         self.did_cast_tendril = False
         self.loss_reason = ''
+
+        self.mana_patterns_valakut_before_wind = ['3UR', '2UR', '2R']
+        self.mana_patterns_valakut_after_wind = ['2RBB', '3RB', '2RB', '2R']
+        # wind唱えた後はpetalなどを使えるので無理に色マナを浮かせなくて良い
+        self.mana_patterns_wind_with_beseech = ['1UBB', '1UB', '3U', '2U', '1U']
+        self.mana_patterns_wind_with_valakut = ['3URB', '2URB', '3UR', '2UR', '1UR', '3U', '2U', '1U']
+        self.mana_patterns_wind_without_beseech_and_valakut = ['1UBR', '1UB', '1UR', '3U', '2U', '1U']
     
     def copy(self):
         new_instance = GameState()
@@ -78,6 +85,12 @@ class GameState:
         self.did_cast_wind = other.did_cast_wind
         self.did_cast_tendril = other.did_cast_tendril
         self.loss_reason = other.loss_reason
+
+        self.mana_patterns_valakut_before_wind = other.mana_patterns_valakut_before_wind
+        self.mana_patterns_valakut_after_wind = other.mana_patterns_valakut_after_wind
+        self.mana_patterns_wind_with_beseech = other.mana_patterns_wind_with_beseech
+        self.mana_patterns_wind_with_valakut = other.mana_patterns_wind_with_valakut
+        self.mana_patterns_wind_without_beseech_and_valakut = other.mana_patterns_wind_without_beseech_and_valakut
     
     def shuffle_deck(self):
         if self.shuffle_enabled:
@@ -157,6 +170,7 @@ class GameState:
         for card in casting_cards:
             if card in cards and card not in cards_removed:
                 cards.remove(card)
+                cards_removed.append(card)
         
         return cards
     
@@ -239,6 +253,61 @@ class GameState:
             self.mana_pool.remove_mana(color, required_count)
             tmp_pool.add_mana(color, required_count)
         
+        # RGWUを生成してtmp_poolに移した
+
+        while WILD_CANTOR in cards_to_use and WILD_CANTOR in self.hand:
+            if self.mana_pool.can_pay_mana('G'):
+                self.mana_pool.pay_mana('G')
+                self.cast_wild_cantor()
+                cards_to_use.remove(WILD_CANTOR)
+            elif self.mana_pool.can_pay_mana('R'):
+                self.mana_pool.pay_mana('R')
+                self.cast_wild_cantor()
+                cards_to_use.remove(WILD_CANTOR)
+            else:
+                break
+        
+        # Cast Dark Ritual
+        while DARK_RITUAL in cards_to_use and DARK_RITUAL in self.hand:
+            if self.mana_pool.B > 0:
+                self.mana_pool.pay_mana('B')
+                self.cast_dark_ritual()
+                cards_to_use.remove(DARK_RITUAL)
+            elif self.mana_source.can_generate_mana('B'):
+                self.mana_source.generate_mana('B')
+            else:
+                break
+        
+        # Cast Cabal Ritual
+        while CABAL_RITUAL in cards_to_use and CABAL_RITUAL in self.hand:
+            if self.mana_pool.can_pay_mana('1B'):
+                self.mana_pool.pay_mana('1B')
+                self.cast_cabal_ritual()
+                cards_to_use.remove(CABAL_RITUAL)
+            elif self.mana_source.can_generate_mana('B'):
+                self.mana_source.generate_mana('B')
+            else:
+                break
+        
+        requiredB = required['B']
+        while self.mana_pool.B < requiredB and self.mana_source.can_generate_mana('B'):
+            self.mana_source.generate_mana('B')
+        
+        while self.mana_pool.get_total() < requiredB + generic:
+            for color in ['B', 'W', 'U', 'R', 'G']:
+                if self.mana_source.can_generate_mana(color):
+                    self.mana_source.generate_mana(color)
+                    break
+            return False
+        
+        if requiredB + generic <= self.mana_pool.get_total():
+            # tmp_poolのマナを元に戻す
+            self.mana_pool.transfer_from(tmp_pool)
+            return True
+        else:
+            return False
+        
+        '''
         requiredB = required['B']
         while self.mana_pool.B < requiredB:
             if self.mana_source.can_generate_mana('B'):
@@ -291,7 +360,8 @@ class GameState:
         
         # tmp_poolのマナを元に戻す
         self.mana_pool.transfer_from(tmp_pool)
-        return True 
+        return True
+        '''
     
     def try_generate_mana(self, mana_cost: str, casting_cards: list[str]) -> bool:
         required, generic = self.mana_pool.analyze_mana_pattern(mana_cost)
@@ -304,7 +374,14 @@ class GameState:
         result, cards_used_from_hand, cards_imprinted, cards_searched = state.can_generate_mana_pattern(required, generic)
         self.debug(f'can_generate_mana_pattern: result: {result} cards_used_from_hand: {cards_used_from_hand} cards_imprinted: {cards_imprinted} cards_searched: {cards_searched}')
         if result:
-            return self.generate_mana_pattern(required, generic, cards_used_from_hand, cards_imprinted, cards_searched)
+            generate_result = self.generate_mana_pattern(required, generic, cards_used_from_hand, cards_imprinted, cards_searched)
+            if not generate_result:
+                error_msg = f"ERROR: state.can_generate_mana_pattern returned True but self.generate_mana_pattern returned False\n"
+                error_msg += f"required: {required}, generic: {generic}\n"
+                error_msg += f"result: {result}, cards_used_from_hand: {cards_used_from_hand}, cards_imprinted: {cards_imprinted}, cards_searched: {cards_searched}"
+                print(error_msg)
+                raise RuntimeError(error_msg)
+            return generate_result
         else:
             return False
     
@@ -847,6 +924,7 @@ class GameState:
         
         return True
     
+    # end stepに指定した色マナが出せるかどうか
     def can_generate_mana(self, color: str) -> bool:
         if self.mana_pool.get_colored_mana_count(color) > 0:
             return True
@@ -880,6 +958,7 @@ class GameState:
                 else:
                     return 'UB'
             elif VALAKUT_AWAKENING in self.hand:
+                # 手札にWindがなくてValakutがある場合
                 if self.can_generate_mana('R'):
                     return 'UB'
                 else:
@@ -890,9 +969,34 @@ class GameState:
                 else:
                     return 'UB'
     
+    def cast_spells_for_storm_count(self):
+        did_cast_0 = False
+        while LOTUS_PETAL in self.hand:
+            self.cast_lotus_petal()
+            did_cast_0 = True
+        
+        while CHROME_MOX in self.hand:
+            self.cast_chrome_mox('')
+            did_cast_0 = True
+        
+        while SUMMONERS_PACT in self.hand:
+            self.cast_summoners_pact('')
+            did_cast_0 = True
+        
+        while DARK_RITUAL in self.hand and self.mana_pool.can_pay_mana('B'):
+            self.mana_pool.pay_mana('B')
+            self.cast_dark_ritual()
+        
+        while CABAL_RITUAL in self.hand and self.mana_pool.can_pay_mana('1B'):
+            self.mana_pool.pay_mana('1B')
+            self.cast_cabal_ritual()
+        
+        if did_cast_0 or self.hand.count(PACT_OF_NEGATION) >= 2:
+            while PACT_OF_NEGATION in self.hand:
+                self.cast_pact_of_negation()
+    
     def try_cast_tendril(self) -> bool:
-        # Summoner's Pactが手札にあり、デッキのElvishとCantorの枚数よりも手札のSummoner's Pactの枚数が多い場合
-        if SUMMONERS_PACT in self.hand and self.deck.count(ELVISH_SPIRIT_GUIDE) + self.deck.count(WILD_CANTOR) <= self.hand.count(SUMMONERS_PACT):
+        if SUMMONERS_PACT in self.hand:
             if ELVISH_SPIRIT_GUIDE in self.deck:
                 self.cast_summoners_pact(ELVISH_SPIRIT_GUIDE)
                 return self.try_cast_tendril()
@@ -909,61 +1013,39 @@ class GameState:
         
         if self.did_cast_wind:
             # After casting Borne Upon a Wind
-            if BESEECH_MIRROR in self.hand or TENDRILS_OF_AGONY in self.hand:
-                mana_cost = '2BB' if TENDRILS_OF_AGONY in self.hand else '1BBB'
-                required_storm_count = 9 if TENDRILS_OF_AGONY in self.hand else 8
-                casting_cards = []
-                if TENDRILS_OF_AGONY in self.hand:
-                    casting_cards.append(TENDRILS_OF_AGONY)
-                elif BESEECH_MIRROR in self.hand:
-                    casting_cards.append(BESEECH_MIRROR)
-
-                if self.try_generate_mana(mana_cost, casting_cards):
-                    #self.debug(f'did generate {mana_cost} to cast tendril after wind.')
-                    did_cast_0 = False
-                    while LOTUS_PETAL in self.hand:
-                        self.cast_lotus_petal()
-                        did_cast_0 = True
-                    
-                    while CHROME_MOX in self.hand:
-                        self.cast_chrome_mox('')
-                        did_cast_0 = True
-                    
-                    while SUMMONERS_PACT in self.hand:
-                        self.cast_summoners_pact('')
-                        did_cast_0 = True
-                    
-                    while DARK_RITUAL in self.hand and self.mana_pool.can_pay_mana('B'):
-                        self.mana_pool.pay_mana('B')
-                        self.cast_dark_ritual()
-                    
-                    while CABAL_RITUAL in self.hand and self.mana_pool.can_pay_mana('1B'):
-                        self.mana_pool.pay_mana('1B')
-                        self.cast_cabal_ritual()
-                    
-                    if did_cast_0 or self.hand.count(PACT_OF_NEGATION) >= 2:
-                        while PACT_OF_NEGATION in self.hand:
-                            self.cast_pact_of_negation()
-                    
+            if TENDRILS_OF_AGONY in self.hand:
+                casting_cards = [TENDRILS_OF_AGONY]
+                if self.try_generate_mana('2BB', casting_cards):
+                    self.cast_spells_for_storm_count()
                     self.debug(f"Floating: {self.mana_pool}")
-                    
-                    if required_storm_count <= self.storm_count:
-                        if TENDRILS_OF_AGONY in self.hand:
-                            self.mana_pool.pay_mana('2BB')
-                            self.cast_tendril(True)
-                            return True
-                        elif BESEECH_MIRROR in self.hand and self.try_sacrifice_bargain():
+                    if 9 <= self.storm_count:
+                        self.mana_pool.pay_mana('2BB')
+                        self.cast_tendril(True)
+                        return True
+            elif BESEECH_MIRROR in self.hand:
+                casting_cards = [BESEECH_MIRROR]
+                if self.try_generate_mana('1BBB', casting_cards):
+                    self.cast_spells_for_storm_count()
+                    self.debug(f"Floating: {self.mana_pool}")
+                    if 8 <= self.storm_count:
+                        if self.try_sacrifice_bargain():
                             self.mana_pool.pay_mana('1BBB')
                             self.cast_beseech()
                             self.cast_tendril(False)
                             return True
+                        elif self.try_generate_mana('3BBBBB', casting_cards):
+                            self.mana_pool.pay_mana('3BBBBB')
+                            self.cast_beseech()
+                            self.deck.remove(TENDRILS_OF_AGONY)
+                            self.hand.append(TENDRILS_OF_AGONY)
+                            self.cast_tendril(True)
+                            return True
             
             if VALAKUT_AWAKENING in self.hand:
                 # self.debug(f'{VALAKUT_AWAKENING} in hand after wind.')
-                mana_patterns = ['2RBBB', '2RBB', '2RB', '2R']
                 casting_cards = [VALAKUT_AWAKENING]
 
-                for cost in mana_patterns:
+                for cost in self.mana_patterns_valakut_after_wind:
                     if self.try_generate_mana(cost, casting_cards):
                         self.mana_pool.pay_mana('2R')
                         cards_to_remove = self.hand.copy()
@@ -983,12 +1065,18 @@ class GameState:
         else:
             # Haven't cast Borne Upon a Wind
             if BORNE_UPON_WIND in self.hand:
-                mana_patterns = ['1UBBB', '1UBB', '1UB', '1U']
+                mana_patterns = self.mana_patterns_wind_with_beseech
                 casting_cards = [BORNE_UPON_WIND]
-                if TENDRILS_OF_AGONY not in self.hand and BESEECH_MIRROR not in self.hand and VALAKUT_AWAKENING in self.hand:
-                    # TendrilもBeseechもhandになく、Valakutがある場合はRを浮かせたい
-                    mana_patterns = ['3URB', '2URB', '1URB', '3UR', '2UR', '1UR', '1UB','1U']
+                if TENDRILS_OF_AGONY in self.hand:
+                    casting_cards.append(TENDRILS_OF_AGONY)
+                elif BESEECH_MIRROR in self.hand:
+                    casting_cards.append(BESEECH_MIRROR)
+                elif VALAKUT_AWAKENING in self.hand:
+                    mana_patterns = self.mana_patterns_wind_with_valakut
                     casting_cards.append(VALAKUT_AWAKENING)
+                else:
+                    # 手札にBeseech, Tendril, Valakutがない場合
+                    mana_patterns = self.mana_patterns_wind_without_beseech_and_valakut
                 
                 for mana_cost in mana_patterns:
                     if self.try_generate_mana(mana_cost, casting_cards):
@@ -997,11 +1085,9 @@ class GameState:
                         return self.try_cast_tendril()
             
             if VALAKUT_AWAKENING in self.hand:
-                # Borne Upon a WindのためにUを浮かせたい
-                mana_patterns = ['3UR', '2UR', '3RR', '3RG', '2RR', '2RG', '2R']
                 casting_cards = [VALAKUT_AWAKENING, BORNE_UPON_WIND]
 
-                for cost in mana_patterns:
+                for cost in self.mana_patterns_valakut_before_wind:
                     if self.try_generate_mana(cost, casting_cards):
                         self.mana_pool.pay_mana('2R')
                         cards_to_remove = self.hand.copy()
@@ -1027,7 +1113,8 @@ class GameState:
         
         return True
 
-    def run_with_initial_hand(self, deck: list[str], initial_hand: list[str], bottom_list: list[str], draw_count: int, cast_summoners_pact_before_draw: bool = False) -> bool:
+    def run_with_initial_hand(self, deck: list[str], initial_hand: list[str], bottom_list: list[str],
+                              draw_count: int = 19, cast_summoners_pact_before_draw: bool = False) -> bool:
         """
         初期手札が指定されている場合のゲーム実行関数
         
@@ -1142,7 +1229,7 @@ if __name__ == "__main__":
     game = GameState()
     deck = create_deck('decks/gemstone4_paradise0_cantor0_chrome4_wind4_valakut3.txt')
     random.shuffle(deck)
-    initial_hand = [GEMSTONE_MINE, DARK_RITUAL, NECRODOMINANCE, SUMMONERS_PACT]
+    initial_hand = [GEMSTONE_MINE, DARK_RITUAL, NECRODOMINANCE, CABAL_RITUAL]
     #initial_hand = []
     if initial_hand:
         game.run_with_initial_hand(deck, initial_hand, [], 19, False)
