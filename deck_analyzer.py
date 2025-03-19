@@ -303,12 +303,52 @@ class DeckAnalyzer:
         
         return stats
     
+    def _remove_unnecessary_fields(self, results: list) -> None:
+        """
+        結果リストから不要な項目を削除する内部関数
+        
+        Args:
+            results: 結果のリスト
+            
+        Returns:
+            None（結果リストを直接修正）
+        """
+        # 各フィールドの値を確認
+        all_cast_necro_rate_100 = all(result.get('cast_necro_rate', 0) == 100.0 for result in results)
+        all_cast_necro_count_equals_total_games = all(
+            result.get('cast_necro_count', 0) == result.get('total_games', 0) 
+            for result in results
+        )
+        all_failed_necro_count_0 = all(result.get('failed_necro_count', 0) == 0 for result in results)
+        all_failed_necro_0 = all(result.get(FALIED_NECRO, 0) == 0 for result in results)
+        all_failed_necro_countered_0 = all(result.get(FAILED_NECRO_COUNTERED, 0) == 0 for result in results)
+        
+        # 条件に基づいて不要な項目を削除
+        for result in results:
+            if all_cast_necro_rate_100 and 'cast_necro_rate' in result:
+                del result['cast_necro_rate']
+            
+            if all_cast_necro_count_equals_total_games and 'cast_necro_count' in result:
+                del result['cast_necro_count']
+            
+            if all_failed_necro_count_0 and 'failed_necro_count' in result:
+                del result['failed_necro_count']
+            
+            if all_failed_necro_0 and FALIED_NECRO in result:
+                del result[FALIED_NECRO]
+            
+            if all_failed_necro_countered_0 and FAILED_NECRO_COUNTERED in result:
+                del result[FAILED_NECRO_COUNTERED]
+    
     def run_draw_count_analysis(self, deck: list[str], initial_hand: list[str], min_draw: int = 10, max_draw: int = 19, iterations: int = 10000) -> list:
         results = []
         for draw_count in range(max_draw, min_draw - 1, -1):
             print(f"\nAnalyzing draw_count = {draw_count}")
             stats = self.run_multiple_simulations_with_initial_hand(deck, initial_hand, [], draw_count, iterations)
             results.append(stats)
+        
+        # 不要な項目を削除
+        self._remove_unnecessary_fields(results)
         
         return results
     
@@ -323,6 +363,9 @@ class DeckAnalyzer:
             stats['deck_name'] = deck_name
             
             results.append(stats)
+        
+        # 不要な項目を削除
+        self._remove_unnecessary_fields(results)
         
         # 結果を表示
         print("\nDeck Comparison Results:")
@@ -343,6 +386,9 @@ class DeckAnalyzer:
             stats['initial_hand'] = ', '.join(initial_hand)
             
             results.append(stats)
+        
+        # 不要な項目を削除
+        self._remove_unnecessary_fields(results)
         
         # win_rateの昇順でソート（最も低いものが先頭に来るように）
         results.sort(key=lambda x: x['win_rate'])
