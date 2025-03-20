@@ -7,12 +7,12 @@ import datetime
 
 BEST_DECK_PATH = 'decks/gemstone4_paradise0_cantor0_chrome4_wind4_valakut3.txt'
 
-def create_custom_deck(card_counts: dict[str, int], base_deck_path: str = 'decks/gemstone4_paradise0_cantor1_chrome4_wind3_valakut3.txt') -> list:
+def create_custom_deck(card_counts: dict, base_deck_path: str = 'decks/gemstone4_paradise0_cantor1_chrome4_wind3_valakut3.txt') -> list:
     """
     指定されたカード枚数でデッキを作成する関数
     
     Args:
-        card_counts: カード名と枚数の辞書 (例: {GEMSTONE_MINE: 4, CHROME_MOX: 4})
+        card_counts: カードと枚数の辞書 (例: {GEMSTONE_MINE: 4, CHROME_MOX: 4})
         base_deck_path: ベースデッキのファイルパス
         
     Returns:
@@ -20,7 +20,7 @@ def create_custom_deck(card_counts: dict[str, int], base_deck_path: str = 'decks
     """
     # ベースデッキを読み込む
     base_deck = create_deck(base_deck_path)
-
+    
     # 辞書のキーに含まれるカードをベースデッキから削除
     remove_cards = list(card_counts.keys())
     new_deck = [card for card in base_deck if card not in remove_cards]
@@ -58,17 +58,20 @@ def compare_decks(analyzer: DeckAnalyzer, iterations: int = 1000000, opponent_ha
         [4, 1, 0, 4, 3, 3],
         [4, 0, 1, 4, 4, 2],
         [4, 1, 0, 4, 4, 2],
-        [4, 1, 0, 4, 2, 4],
         [4, 0, 0, 4, 4, 3],
-        [4, 0, 0, 4, 3, 4],
+        [4, 0, 0, 4, 4, 4],
         [4, 1, 0, 3, 3, 4],
         [4, 0, 1, 3, 4, 3],
         [4, 1, 0, 3, 4, 3],
         [4, 0, 0, 3, 4, 4],
+        [4, 1, 0, 4, 2, 4],
         [4, 1, 1, 2, 4, 3],
+        [4, 0, 0, 4, 4, 3],
         [4, 1, 0, 2, 4, 4],
         [4, 0, 1, 2, 4, 4],
+        [4, 1, 0, 3, 4, 3],
         [4, 2, 0, 2, 4, 3],
+        [4, 0, 1, 2, 4, 4],
         [3, 0, 1, 4, 4, 3],
         [3, 0, 0, 4, 4, 4],
         [3, 0, 1, 3, 4, 4]
@@ -250,7 +253,6 @@ def compare_initial_hands(analyzer: DeckAnalyzer, iterations: int = 1000000):
     
     return results
 
-###todo
 def compare_chancellor_decks(analyzer: DeckAnalyzer, iterations: int = 1000000):
     """
     Chancellor of the Annexを4枚追加したデッキバリエーションを比較する関数
@@ -280,7 +282,7 @@ def compare_chancellor_decks(analyzer: DeckAnalyzer, iterations: int = 1000000):
         [UNDISCOVERED_PARADISE] * 1 + [CHROME_MOX] * 3,
         [UNDISCOVERED_PARADISE] * 1 + [CHROME_MOX] * 2 + [SUMMONERS_PACT] * 1,
         [UNDISCOVERED_PARADISE] * 1 + [CHROME_MOX] * 1 + [SUMMONERS_PACT] * 1 + [BESEECH_MIRROR] * 1,
-        [UNDISCOVERED_PARADISE] * 1 + [CHROME_MOX] * 1 + [SUMMONERS_PACT] * 1 + [UNDISCOVERED_PARADISE] * 0 + [VALAKUT_AWAKENING] * 1,  # 注: UNDISCOVEREDは1枚しかないので2枚は指定できない
+        [UNDISCOVERED_PARADISE] * 1 + [CHROME_MOX] * 1 + [SUMMONERS_PACT] * 1 + [VALAKUT_AWAKENING] * 1,
         
         [UNDISCOVERED_PARADISE] * 1 + [GEMSTONE_MINE] * 3,
         [UNDISCOVERED_PARADISE] * 1 + [GEMSTONE_MINE] * 1 + [CHROME_MOX] * 2,
@@ -717,6 +719,7 @@ if __name__ == "__main__":
     initial_hand = [GEMSTONE_MINE, DARK_RITUAL, NECRODOMINANCE, LOTUS_PETAL, LOTUS_PETAL, MANAMORPHOSE, VALAKUT_AWAKENING]
     compare_keep_cards_for_hand(analyzer, initial_hand, iterations=iterations)
     '''
+    
     end_time = time.time()
     elapsed_time = end_time - start_time
     

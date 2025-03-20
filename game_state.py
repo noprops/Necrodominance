@@ -41,7 +41,7 @@ class GameState:
         self.loss_reason = ''
 
         self.mana_patterns_valakut_before_wind = ['3UR', '2UR', '2R']
-        self.mana_patterns_valakut_after_wind = ['2RBB', '3RB', '2RB', '2R']
+        self.mana_patterns_valakut_after_wind = ['2R']#['2RBB', '3RB', '2RB', '2R']
         # wind唱えた後はpetalなどを使えるので無理に色マナを浮かせなくて良い
         self.mana_patterns_wind_with_beseech = ['1UBB', '1UB', '3U', '2U', '1U']
         self.mana_patterns_wind_with_valakut = ['3URB', '2URB', '3UR', '2UR', '1UR', '3U', '2U', '1U']
@@ -1130,10 +1130,14 @@ class GameState:
                         cards_to_remove.remove(VALAKUT_AWAKENING)
                         if BORNE_UPON_WIND in self.hand:
                             cards_to_remove.remove(BORNE_UPON_WIND)
-                        if TENDRILS_OF_AGONY in self.hand:
-                            cards_to_remove.remove(TENDRILS_OF_AGONY)
-                        elif BESEECH_MIRROR in self.hand:
-                            cards_to_remove.remove(BESEECH_MIRROR)
+                        
+                        tendril_count = self.hand.count(TENDRILS_OF_AGONY) + self.hand.count(BESEECH_MIRROR)
+                        if tendril_count >= 3:
+                            if TENDRILS_OF_AGONY in self.hand:
+                                cards_to_remove.remove(TENDRILS_OF_AGONY)
+                            elif BESEECH_MIRROR in self.hand:
+                                cards_to_remove.remove(BESEECH_MIRROR)
+                        
                         self.cast_valakut(cards_to_remove)
                         return self.try_cast_tendril()
         
@@ -1191,15 +1195,17 @@ class GameState:
         self.reset_game()
         self.mulligan_count = 0
         self.deck = deck.copy()
-        if self.shuffle_enabled:
-            self.shuffle_deck()
-        
+
         self.hand = initial_hand.copy()
         for card in self.hand:
             if card in self.deck:
                 self.deck.remove(card)
             else:
                 self.debug(f"Warning: Card {card} not found in deck")
+        
+        # handのカードをdeckから取り除いた後でシャッフルする
+        if self.shuffle_enabled:
+            self.shuffle_deck()
         
         # bottom_listが空でない場合、指定されたカードを手札からデッキボトムに移動
         if bottom_list:

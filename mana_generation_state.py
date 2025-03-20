@@ -345,7 +345,7 @@ class ManaGenerationState:
         if self.can_cast_sorcery:
             # Cast Chrome Mox
             if CHROME_MOX in self.hand:
-                for color in ['G', 'B', 'R', 'U']:
+                for color in ['W', 'G', 'B', 'R', 'U']:
                     if self.try_cast_chrome_mox(color):
                         self.mana_pool.add_mana(color)
                         if self.try_generate_generic(required, generic):

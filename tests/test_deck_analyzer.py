@@ -14,6 +14,9 @@ from deck_utils import create_deck, save_results_to_csv
 from deck_analyzer import DeckAnalyzer
 
 class TestDeckAnalyzer(unittest.TestCase):
+    # 結果を保存するフォルダパス
+    RESULTS_FOLDER = 'results'
+    
     @classmethod
     def setUpClass(cls):
         """Create DeckAnalyzer instance once for all tests"""
@@ -47,7 +50,7 @@ class TestDeckAnalyzer(unittest.TestCase):
             cast_summoners_pact: Summoner's Pactを唱えるかどうか
             
         Returns:
-            (win_rate_a, win_rate_b, results): 初期手札AとBの勝率と結果のリスト
+            (win_rate_a, win_rate_b): 初期手札AとBの勝率
         """
         # デフォルトのデッキを取得
         deck = self.get_default_deck()
@@ -70,7 +73,7 @@ class TestDeckAnalyzer(unittest.TestCase):
             cast_summoners_pact: Summoner's Pactを唱えるかどうか
             
         Returns:
-            (win_rate_a, win_rate_b, results): 初期手札AとBの勝率と結果のリスト
+            (win_rate_a, win_rate_b): 初期手札AとBの勝率
         """
         
         # 初期手札Aの勝率を計算
@@ -101,10 +104,13 @@ class TestDeckAnalyzer(unittest.TestCase):
             }
         ]
         
+        # 結果をCSVに保存
+        save_results_to_csv(self._testMethodName, results, folder_path=self.RESULTS_FOLDER)
+        
         print(f"初期手札A: {', '.join(initial_hand_a)} (Bottom: {', '.join(bottom_list_a)}) の勝率: {win_rate_a:.2f}%")
         print(f"初期手札B: {', '.join(initial_hand_b)} (Bottom: {', '.join(bottom_list_b)}) の勝率: {win_rate_b:.2f}%")
         
-        return win_rate_a, win_rate_b, results
+        return win_rate_a, win_rate_b
     
     def test_summoners_vs_elvish_without_shuffle(self):
         """
@@ -125,10 +131,7 @@ class TestDeckAnalyzer(unittest.TestCase):
         initial_hand_b = [GEMSTONE_MINE, DARK_RITUAL, NECRODOMINANCE, ELVISH_SPIRIT_GUIDE]
         
         # 勝率を比較（Summoner's Pactを唱えない）
-        win_rate_a, win_rate_b, results = self.compare_initial_hands_with_default_deck(initial_hand_a, initial_hand_b, cast_summoners_pact=False)
-        
-        # 結果をCSVに保存
-        save_results_to_csv(self._testMethodName, results, folder_path='tests/results')
+        win_rate_a, win_rate_b = self.compare_initial_hands_with_default_deck(initial_hand_a, initial_hand_b, cast_summoners_pact=False)
         
         # 勝率の差を表示
         diff = win_rate_a - win_rate_b
@@ -160,10 +163,7 @@ class TestDeckAnalyzer(unittest.TestCase):
         initial_hand_b = [GEMSTONE_MINE, DARK_RITUAL, NECRODOMINANCE, ELVISH_SPIRIT_GUIDE]
         
         # 勝率を比較（Summoner's Pactを唱える）
-        win_rate_a, win_rate_b, results = self.compare_initial_hands_with_default_deck(initial_hand_a, initial_hand_b, cast_summoners_pact=True)
-        
-        # 結果をCSVに保存
-        save_results_to_csv(self._testMethodName, results, folder_path='tests/results')
+        win_rate_a, win_rate_b = self.compare_initial_hands_with_default_deck(initial_hand_a, initial_hand_b, cast_summoners_pact=True)
         
         # 勝率の差を表示
         diff = win_rate_a - win_rate_b
@@ -200,10 +200,7 @@ class TestDeckAnalyzer(unittest.TestCase):
         bottom_list_b = [GEMSTONE_MINE, GEMSTONE_MINE, BORNE_UPON_WIND]
         
         # 勝率を比較（Summoner's Pactを唱えない）
-        win_rate_a, win_rate_b, results = self.compare_initial_hands_with_default_deck(initial_hand_a, initial_hand_b, bottom_list_a, bottom_list_b, cast_summoners_pact=False)
-        
-        # 結果をCSVに保存
-        save_results_to_csv(self._testMethodName, results, folder_path='tests/results')
+        win_rate_a, win_rate_b = self.compare_initial_hands_with_default_deck(initial_hand_a, initial_hand_b, bottom_list_a, bottom_list_b, cast_summoners_pact=False)
         
         # 勝率の差を表示
         diff = win_rate_a - win_rate_b
@@ -242,10 +239,7 @@ class TestDeckAnalyzer(unittest.TestCase):
         bottom_list_b = [GEMSTONE_MINE, GEMSTONE_MINE, BORNE_UPON_WIND]
         
         # 勝率を比較（Summoner's Pactを唱える）
-        win_rate_a, win_rate_b, results = self.compare_initial_hands_with_default_deck(initial_hand_a, initial_hand_b, bottom_list_a, bottom_list_b, cast_summoners_pact=True)
-        
-        # 結果をCSVに保存
-        save_results_to_csv(self._testMethodName, results, folder_path='tests/results')
+        win_rate_a, win_rate_b = self.compare_initial_hands_with_default_deck(initial_hand_a, initial_hand_b, bottom_list_a, bottom_list_b, cast_summoners_pact=True)
         
         # 勝率の差を表示
         diff = win_rate_a - win_rate_b
@@ -281,10 +275,7 @@ class TestDeckAnalyzer(unittest.TestCase):
         bottom_list_b = [GEMSTONE_MINE, MANAMORPHOSE, BORNE_UPON_WIND]
         
         # 勝率を比較（Summoner's Pactを唱えない）
-        win_rate_a, win_rate_b, results = self.compare_initial_hands_with_default_deck(initial_hand_a, initial_hand_b, bottom_list_a, bottom_list_b, cast_summoners_pact=False)
-        
-        # 結果をCSVに保存
-        save_results_to_csv(self._testMethodName, results, folder_path='tests/results')
+        win_rate_a, win_rate_b = self.compare_initial_hands_with_default_deck(initial_hand_a, initial_hand_b, bottom_list_a, bottom_list_b, cast_summoners_pact=False)
         
         # 勝率の差を表示
         diff = win_rate_a - win_rate_b
@@ -324,10 +315,7 @@ class TestDeckAnalyzer(unittest.TestCase):
         bottom_list_b = [GEMSTONE_MINE, MANAMORPHOSE, BORNE_UPON_WIND]
         
         # 勝率を比較（Summoner's Pactを唱える）
-        win_rate_a, win_rate_b, results = self.compare_initial_hands_with_default_deck(initial_hand_a, initial_hand_b, bottom_list_a, bottom_list_b, cast_summoners_pact=True)
-        
-        # 結果をCSVに保存
-        save_results_to_csv(self._testMethodName, results, folder_path='tests/results')
+        win_rate_a, win_rate_b = self.compare_initial_hands_with_default_deck(initial_hand_a, initial_hand_b, bottom_list_a, bottom_list_b, cast_summoners_pact=True)
         
         # 勝率の差を表示
         diff = win_rate_a - win_rate_b
@@ -367,10 +355,7 @@ class TestDeckAnalyzer(unittest.TestCase):
         bottom_list_b = [GEMSTONE_MINE, GEMSTONE_MINE, GEMSTONE_MINE]
         
         # 勝率を比較（Summoner's Pactを唱えない）
-        win_rate_a, win_rate_b, results = self.compare_initial_hands_with_default_deck(initial_hand_a, initial_hand_b, bottom_list_a, bottom_list_b, cast_summoners_pact=False)
-        
-        # 結果をCSVに保存
-        save_results_to_csv(self._testMethodName, results, folder_path='tests/results')
+        win_rate_a, win_rate_b = self.compare_initial_hands_with_default_deck(initial_hand_a, initial_hand_b, bottom_list_a, bottom_list_b, cast_summoners_pact=False)
         
         # 勝率の差を表示
         diff = win_rate_a - win_rate_b
@@ -410,10 +395,7 @@ class TestDeckAnalyzer(unittest.TestCase):
         bottom_list_b = [GEMSTONE_MINE, GEMSTONE_MINE, GEMSTONE_MINE]
         
         # 勝率を比較（Summoner's Pactを唱える）
-        win_rate_a, win_rate_b, results = self.compare_initial_hands_with_default_deck(initial_hand_a, initial_hand_b, bottom_list_a, bottom_list_b, cast_summoners_pact=True)
-        
-        # 結果をCSVに保存
-        save_results_to_csv(self._testMethodName, results, folder_path='tests/results')
+        win_rate_a, win_rate_b = self.compare_initial_hands_with_default_deck(initial_hand_a, initial_hand_b, bottom_list_a, bottom_list_b, cast_summoners_pact=True)
         
         # 勝率の差を表示
         diff = win_rate_a - win_rate_b
@@ -450,10 +432,7 @@ class TestDeckAnalyzer(unittest.TestCase):
         initial_hand_b = [GEMSTONE_MINE, DARK_RITUAL, NECRODOMINANCE, CABAL_RITUAL]
         
         # 勝率を比較（Summoner's Pactを唱えない）
-        win_rate_a, win_rate_b, results = self.compare_initial_hands_with_default_deck(initial_hand_a, initial_hand_b, cast_summoners_pact=False)
-        
-        # 結果をCSVに保存
-        save_results_to_csv(self._testMethodName, results, folder_path='tests/results')
+        win_rate_a, win_rate_b = self.compare_initial_hands_with_default_deck(initial_hand_a, initial_hand_b, cast_summoners_pact=False)
         
         # 勝率の差を表示
         diff = win_rate_a - win_rate_b
@@ -636,10 +615,7 @@ class TestDeckAnalyzer(unittest.TestCase):
         initial_hand_b = [GEMSTONE_MINE, DARK_RITUAL, NECRODOMINANCE, CABAL_RITUAL]
         
         # 勝率を比較
-        win_rate_a, win_rate_b, results = self.compare_initial_hands_with_default_deck(initial_hand_a, initial_hand_b)
-        
-        # 結果をCSVに保存
-        save_results_to_csv(self._testMethodName, results, folder_path='tests/results')
+        win_rate_a, win_rate_b = self.compare_initial_hands_with_default_deck(initial_hand_a, initial_hand_b)
         
         # 勝率の差を表示
         diff = win_rate_a - win_rate_b
