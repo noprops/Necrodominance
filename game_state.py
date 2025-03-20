@@ -7,25 +7,6 @@ from mana_sources import ManaSources
 from mana_generation_state import ManaGenerationState
 from card_constants import *
 
-# Loss Reason
-FALIED_NECRO = "Failed to cast Necrodominance"
-FAILED_NECRO_COUNTERED = "Failed to resolve Necrodominance due to counter spell"
-
-# Wind唱えた後の失敗理由
-CAST_WIND_FAILED_TENDRILS_WITH_BESEECH_OR_TENDRILS = "Cast Borne Upon a Wind but failed to cast Tendrils, with Beseech or Tendrils in hand"
-CAST_WIND_FAILED_TENDRILS_WITHOUT_BESEECH_OR_TENDRILS = "Cast Borne Upon a Wind but failed to cast Tendrils, without Beseech or Tendrils in hand"
-
-# Valakut唱えた後の失敗理由
-CAST_VALAKUT_FAILED_WIND_WITH_WIND = "Cast Valakut but failed to cast Borne Upon a Wind, with Wind in hand"
-CAST_VALAKUT_FAILED_WIND_WITHOUT_WIND = "Cast Valakut but failed to cast Borne Upon a Wind, without Wind in hand"
-
-# WindもValakutも唱えられなかった場合
-FAILED_CAST_BOTH_WITH_WIND_AND_VALAKUT = "Failed to cast both Valakut and Borne Upon a Wind, with both in hand"
-FAILED_CAST_BOTH_WITH_WIND_WITHOUT_VALAKUT = "Failed to cast both Valakut and Borne Upon a Wind, with Wind but without Valakut"
-FAILED_CAST_BOTH_WITHOUT_WIND_WITH_VALAKUT = "Failed to cast both Valakut and Borne Upon a Wind, without Wind but with Valakut"
-FAILED_CAST_BOTH_WITHOUT_WIND_AND_VALAKUT = "Failed to cast both Valakut and Borne Upon a Wind, without both"
-
-
 class GameState:
     def __init__(self):
         self.debug_print = True  # Print control flag
@@ -933,6 +914,9 @@ class GameState:
         return self.try_cast_tendril()
     
     def validate_hand_in_end_step(self):
+        if self.did_cast_wind:
+            return True
+        
         # Count cards
         simian_count = self.hand.count(SIMIAN_SPIRIT_GUIDE)
         elvish_count = self.hand.count(ELVISH_SPIRIT_GUIDE)
@@ -943,7 +927,7 @@ class GameState:
 
         available_mana_total = self.mana_source.get_total() + elvish_count + simian_count + summoners_count
 
-        if available_mana_total < 2:
+        if available_mana_total <= 1:
             # 2マナ出ない場合
             if wind_count > 0:
                 if valakut_count > 0:
@@ -1238,6 +1222,11 @@ class GameState:
         #print(f"after main phase self.battlefield = {self.battlefield}")
         #print(f"after main phase self.mana_source = {self.mana_source}")
         #print(f"len(self.deck) = {len(self.deck)}")
+        #print(f"Dark Ritual count in hand {self.hand.count(DARK_RITUAL)}")
+        #print(f"Dark Ritual count in deck {self.deck.count(DARK_RITUAL)}")
+
+        #print(f"Cabal Ritual count in hand {self.hand.count(CABAL_RITUAL)}")
+        #print(f"Cabal Ritual count in deck {self.deck.count(CABAL_RITUAL)}")
         
         if self.end_step(draw_count):
             self.debug("You Win.")

@@ -1,32 +1,11 @@
 from game_state import *
-from deck_utils import get_filename_without_extension, create_deck, save_results_to_csv
+from deck_utils import get_filename_without_extension, create_deck, save_results_to_csv, DEFAULT_PRIORITY_FIELDS
 from deck_analyzer import DeckAnalyzer
 from collections import defaultdict
 import time
 import datetime
 
 BEST_DECK_PATH = 'decks/gemstone4_paradise0_cantor0_chrome4_wind4_valakut3.txt'
-
-# フィールドの優先順位リスト（基本とマリガン回数ごとの統計情報を含む）
-DEFAULT_PRIORITY_FIELDS = [
-    'GEMSTONE_MINE', 'UNDISCOVERED_PARADISE', 'WILD_CANTOR', 'CHROME_MOX', 'BORNE_UPON_WIND', 'VALAKUT_AWAKENING',
-    'initial_hand', 'kept_card', 'bottom_cards', 'cast_summoners_pact_before_draw', 'draw_count', 'total_games', 'win_rate', 
-    'cast_necro_rate', 'total_cast_necro', 'cast_necro_count', 'necro_resolve_count', 'necro_countered_count', 'necro_resolve_rate', 'win_after_necro_resolve_rate',
-    'total_wins', 'total_losses', 'wins', 'losses', 'failed_necro_count',
-    FALIED_NECRO, FAILED_NECRO_COUNTERED, 
-    FAILED_CAST_BOTH_WITH_WIND_AND_VALAKUT, FAILED_CAST_BOTH_WITH_WIND_WITHOUT_VALAKUT, 
-    FAILED_CAST_BOTH_WITHOUT_WIND_WITH_VALAKUT, FAILED_CAST_BOTH_WITHOUT_WIND_AND_VALAKUT,
-    CAST_VALAKUT_FAILED_WIND_WITH_WIND, CAST_VALAKUT_FAILED_WIND_WITHOUT_WIND,
-    CAST_WIND_FAILED_TENDRILS_WITH_BESEECH_OR_TENDRILS, CAST_WIND_FAILED_TENDRILS_WITHOUT_BESEECH_OR_TENDRILS,
-    # wins_mull0, wins_mull1, ...
-    'wins_mull0', 'wins_mull1', 'wins_mull2', 'wins_mull3', 'wins_mull4',
-    # losses_mull0, losses_mull1, ...
-    'losses_mull0', 'losses_mull1', 'losses_mull2', 'losses_mull3', 'losses_mull4',
-    # cast_necro_mull0, cast_necro_mull1, ...
-    'cast_necro_mull0', 'cast_necro_mull1', 'cast_necro_mull2', 'cast_necro_mull3', 'cast_necro_mull4',
-    # win_rate_mull0, win_rate_mull1, ...
-    'win_rate_mull0', 'win_rate_mull1', 'win_rate_mull2', 'win_rate_mull3', 'win_rate_mull4'
-]
 
 def create_custom_deck(card_counts: dict[str, int], base_deck_path: str = 'decks/gemstone4_paradise0_cantor1_chrome4_wind3_valakut3.txt') -> list:
     """
@@ -714,7 +693,7 @@ def analyze_summoners_pact_casting(analyzer: DeckAnalyzer, initial_hand: list[st
     }
 
 if __name__ == "__main__":
-    iterations = 1000000
+    iterations = 100000
     analyzer = DeckAnalyzer()
     
     print("シミュレーション開始: ", datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))

@@ -1,31 +1,13 @@
 import random
 from collections import defaultdict
 from game_state import *
+from card_constants import *
 
 DECK_PATHS = [
     'decks/wind4_valakut2_cantor1_paradise0.txt',
     'decks/wind4_valakut2_cantor0_paradise1.txt',
     'decks/wind3_valakut3_cantor1_paradise0.txt',
     'decks/wind3_valakut3_cantor0_paradise1.txt'
-]
-
-# フィールドの優先順位リスト（基本とマリガン回数ごとの統計情報を含む）
-DEFAULT_PRIORITY_FIELDS = [
-    'deck_name', 'initial_hand', 'draw_count', 'total_games', 'win_rate', 'cast_necro_rate', 'necro_resolve_rate', 'win_after_necro_resolve_rate',
-    'total_wins', 'total_losses', 'total_cast_necro', 'failed_necro_count', 'necro_resolve_count', 'necro_countered_count',
-    FALIED_NECRO, FAILED_NECRO_COUNTERED, 
-    FAILED_CAST_BOTH_WITH_WIND_AND_VALAKUT, FAILED_CAST_BOTH_WITH_WIND_WITHOUT_VALAKUT, 
-    FAILED_CAST_BOTH_WITHOUT_WIND_WITH_VALAKUT, FAILED_CAST_BOTH_WITHOUT_WIND_AND_VALAKUT,
-    CAST_VALAKUT_FAILED_WIND_WITH_WIND, CAST_VALAKUT_FAILED_WIND_WITHOUT_WIND,
-    CAST_WIND_FAILED_TENDRILS_WITH_BESEECH_OR_TENDRILS, CAST_WIND_FAILED_TENDRILS_WITHOUT_BESEECH_OR_TENDRILS,
-    # wins_mull0, wins_mull1, ...
-    'wins_mull0', 'wins_mull1', 'wins_mull2', 'wins_mull3', 'wins_mull4',
-    # losses_mull0, losses_mull1, ...
-    'losses_mull0', 'losses_mull1', 'losses_mull2', 'losses_mull3', 'losses_mull4',
-    # cast_necro_mull0, cast_necro_mull1, ...
-    'cast_necro_mull0', 'cast_necro_mull1', 'cast_necro_mull2', 'cast_necro_mull3', 'cast_necro_mull4',
-    # win_rate_mull0, win_rate_mull1, ...
-    'win_rate_mull0', 'win_rate_mull1', 'win_rate_mull2', 'win_rate_mull3', 'win_rate_mull4'
 ]
 
 class DeckAnalyzer:
