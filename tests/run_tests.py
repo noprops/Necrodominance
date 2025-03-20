@@ -18,11 +18,11 @@ def run_all_tests():
     test_loader = unittest.TestLoader()
     all_tests = test_loader.discover('.', pattern='test_*.py')
     
-    # test_multiple_runs.pyを除外したテストスイートを作成
+    # test_deck_analyzer.pyを除外したテストスイートを作成
     test_suite = unittest.TestSuite()
     for test in all_tests:
         for test_case in test:
-            if 'test_multiple_runs' not in str(test_case):
+            if 'test_deck_analyzer' not in str(test_case):
                 test_suite.addTest(test_case)
     
     # テスト結果を表示するためのテストランナーを作成
