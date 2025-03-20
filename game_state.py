@@ -40,11 +40,12 @@ class GameState:
         self.did_cast_tendril = False
         self.loss_reason = ''
 
-        self.mana_patterns_valakut_before_wind = ['3UR', '2UR', '2R']
-        self.mana_patterns_valakut_after_wind = ['2R']#['2RBB', '3RB', '2RB', '2R']
+        self.mana_patterns_valakut_before_wind = ['3UR', '2UR', '3R', '2R']
+        self.mana_patterns_valakut_after_wind = ['2RB', '2R']#['2RBB', '3RB', '2RB', '2R']
         # wind唱えた後はpetalなどを使えるので無理に色マナを浮かせなくて良い
-        self.mana_patterns_wind_with_beseech = ['1UBB', '1UB', '3U', '2U', '1U']
-        self.mana_patterns_wind_with_valakut = ['3URB', '2URB', '3UR', '2UR', '1UR', '3U', '2U', '1U']
+        self.mana_patterns_wind_with_beseech_and_petal = ['1UB', '2U', '1U']
+        self.mana_patterns_wind_with_beseech_without_petal = ['1UB', '3U', '2U', '1U']
+        self.mana_patterns_wind_with_valakut = ['3UR', '2UR', '1UR', '3U', '2U', '1U']
         self.mana_patterns_wind_without_beseech_and_valakut = ['1UBR', '1UB', '1UR', '3U', '2U', '1U']
     
     def copy(self):
@@ -81,7 +82,8 @@ class GameState:
 
         self.mana_patterns_valakut_before_wind = other.mana_patterns_valakut_before_wind
         self.mana_patterns_valakut_after_wind = other.mana_patterns_valakut_after_wind
-        self.mana_patterns_wind_with_beseech = other.mana_patterns_wind_with_beseech
+        self.mana_patterns_wind_with_beseech_and_petal = other.mana_patterns_wind_with_beseech_and_petal
+        self.mana_patterns_wind_with_beseech_without_petal = other.mana_patterns_wind_with_beseech_without_petal
         self.mana_patterns_wind_with_valakut = other.mana_patterns_wind_with_valakut
         self.mana_patterns_wind_without_beseech_and_valakut = other.mana_patterns_wind_without_beseech_and_valakut
     
@@ -322,69 +324,7 @@ class GameState:
             self.mana_pool.transfer_from(tmp_pool)
             return (True, "")
         else:
-            #error_msg = f"ERROR in generate_mana_pattern: Failed to generate enough mana after all attempts\n"
-            #error_msg += f"required: {requiredB} black + {generic} generic, current total: {self.mana_pool.get_total()}\n"
-            #error_msg += f"mana_pool: {self.mana_pool}, mana_source: {self.mana_source}\n"
-            #error_msg += f"cards_to_use: {cards_to_use}, hand: {self.hand}"
-            #print(error_msg)
-            #raise RuntimeError(error_msg)
             return (False, "Failed to generate enough mana after all attempts")
-        
-        '''
-        requiredB = required['B']
-        while self.mana_pool.B < requiredB:
-            if self.mana_source.can_generate_mana('B'):
-                self.mana_source.generate_mana('B')
-                continue
-            elif DARK_RITUAL in cards_to_use and DARK_RITUAL in self.hand and self.mana_pool.B > 0:
-                self.mana_pool.pay_mana('B')
-                self.cast_dark_ritual()
-                cards_to_use.remove(DARK_RITUAL)
-                continue
-            elif CABAL_RITUAL in cards_to_use and CABAL_RITUAL in self.hand and self.mana_pool.can_pay_mana('1B'):
-                self.mana_pool.pay_mana('1B')
-                self.cast_cabal_ritual()
-                cards_to_use.remove(CABAL_RITUAL)
-                continue
-            elif WILD_CANTOR in cards_to_use and WILD_CANTOR in self.hand:
-                if self.mana_pool.can_pay_mana('G'):
-                    self.mana_pool.pay_mana('G')
-                    self.cast_wild_cantor()
-                    cards_to_use.remove(WILD_CANTOR)
-                    continue
-                if self.mana_pool.can_pay_mana('R'):
-                    self.mana_pool.pay_mana('R')
-                    self.cast_wild_cantor()
-                    cards_to_use.remove(WILD_CANTOR)
-                    continue
-            return False
-        
-        while self.mana_pool.get_total() < requiredB + generic:
-            did_generate_mana = False
-            for color in ['B', 'W', 'U', 'R', 'G']:
-                if self.mana_source.can_generate_mana(color):
-                    self.mana_source.generate_mana(color)
-                    did_generate_mana = True
-                    break
-            if did_generate_mana:
-                continue
-
-            if DARK_RITUAL in cards_to_use and DARK_RITUAL in self.hand and self.mana_pool.B > 0:
-                self.mana_pool.pay_mana('B')
-                self.cast_dark_ritual()
-                cards_to_use.remove(DARK_RITUAL)
-                continue
-            elif CABAL_RITUAL in cards_to_use and CABAL_RITUAL in self.hand and self.mana_pool.can_pay_mana('1B'):
-                self.mana_pool.pay_mana('1B')
-                self.cast_cabal_ritual()
-                cards_to_use.remove(CABAL_RITUAL)
-                continue
-            return False
-        
-        # tmp_poolのマナを元に戻す
-        self.mana_pool.transfer_from(tmp_pool)
-        return True
-        '''
     
     def try_generate_mana(self, mana_cost: str, casting_cards: list[str]) -> bool:
         required, generic = self.mana_pool.analyze_mana_pattern(mana_cost)
@@ -1101,15 +1041,16 @@ class GameState:
         else:
             # Haven't cast Borne Upon a Wind
             if BORNE_UPON_WIND in self.hand:
-                mana_patterns = self.mana_patterns_wind_with_beseech
+                mana_patterns = self.mana_patterns_wind_with_beseech_without_petal
                 casting_cards = [BORNE_UPON_WIND]
-                if TENDRILS_OF_AGONY in self.hand:
-                    casting_cards.append(TENDRILS_OF_AGONY)
-                elif BESEECH_MIRROR in self.hand:
-                    casting_cards.append(BESEECH_MIRROR)
+
+                if TENDRILS_OF_AGONY in self.hand or BESEECH_MIRROR in self.hand:
+                    if LOTUS_PETAL in self.hand or CHROME_MOX in self.hand:
+                        mana_patterns = self.mana_patterns_wind_with_beseech_and_petal
+                    else:
+                        mana_patterns = self.mana_patterns_wind_with_beseech_without_petal
                 elif VALAKUT_AWAKENING in self.hand:
                     mana_patterns = self.mana_patterns_wind_with_valakut
-                    casting_cards.append(VALAKUT_AWAKENING)
                 else:
                     # 手札にBeseech, Tendril, Valakutがない場合
                     mana_patterns = self.mana_patterns_wind_without_beseech_and_valakut
