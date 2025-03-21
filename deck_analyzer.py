@@ -3,16 +3,10 @@ from collections import defaultdict
 from game_state import *
 from card_constants import *
 
-DECK_PATHS = [
-    'decks/wind4_valakut2_cantor1_paradise0.txt',
-    'decks/wind4_valakut2_cantor0_paradise1.txt',
-    'decks/wind3_valakut3_cantor1_paradise0.txt',
-    'decks/wind3_valakut3_cantor0_paradise1.txt'
-]
-
 class DeckAnalyzer:
-    def __init__(self):
+    def __init__(self, detailed_loss_reason=False):
         self.game = GameState()
+        self.detailed_loss_reason = detailed_loss_reason
     
     def _calculate_statistics(self, wins, losses, cast_necro_count, failed_necro_count, loss_reasons, draw_count, iterations, mulligan_until_necro=False):
         """
@@ -49,14 +43,23 @@ class DeckAnalyzer:
         }
         
         # 各loss_reasonごとに欄を作成
-        for reason in [
-            FALIED_NECRO, FAILED_NECRO_COUNTERED, 
-            FAILED_CAST_BOTH_WITH_WIND_AND_VALAKUT, FAILED_CAST_BOTH_WITH_WIND_WITHOUT_VALAKUT, 
-            FAILED_CAST_BOTH_WITHOUT_WIND_WITH_VALAKUT, FAILED_CAST_BOTH_WITHOUT_WIND_AND_VALAKUT,
-            CAST_VALAKUT_FAILED_WIND_WITH_WIND, CAST_VALAKUT_FAILED_WIND_WITHOUT_WIND,
-            CAST_WIND_FAILED_TENDRILS_WITH_BESEECH_OR_TENDRILS, CAST_WIND_FAILED_TENDRILS_WITHOUT_BESEECH_OR_TENDRILS
-        ]:
-            stats[reason] = loss_reasons[reason]
+        if self.detailed_loss_reason:
+            # 詳細なloss_reasonを使用する場合
+            for reason in [
+                FALIED_NECRO, FAILED_NECRO_COUNTERED, 
+                FAILED_CAST_BOTH_WITH_WIND_AND_VALAKUT, FAILED_CAST_BOTH_WITH_WIND_WITHOUT_VALAKUT, 
+                FAILED_CAST_BOTH_WITHOUT_WIND_WITH_VALAKUT, FAILED_CAST_BOTH_WITHOUT_WIND_AND_VALAKUT,
+                CAST_VALAKUT_FAILED_WIND_WITH_WIND, CAST_VALAKUT_FAILED_WIND_WITHOUT_WIND,
+                CAST_WIND_FAILED_TENDRILS_WITH_BESEECH_OR_TENDRILS, CAST_WIND_FAILED_TENDRILS_WITHOUT_BESEECH_OR_TENDRILS
+            ]:
+                stats[reason] = loss_reasons[reason]
+        else:
+            # 単純化されたloss_reasonを使用する場合
+            for reason in [
+                FALIED_NECRO, FAILED_NECRO_COUNTERED, 
+                FAILED_CAST_BOTH, CAST_VALAKUT_FAILED_WIND, CAST_WIND_FAILED_TENDRILS
+            ]:
+                stats[reason] = loss_reasons[reason]
         
         # マリガン回数ごとの統計情報を展開して追加
         for m in range(5):
@@ -153,7 +156,20 @@ class DeckAnalyzer:
                 
                 # 負けた理由を記録
                 if self.game.loss_reason:
-                    loss_reasons[self.game.loss_reason] += 1
+                    # 詳細なloss_reasonを使用するかどうかをチェック
+                    if self.detailed_loss_reason:
+                        loss_reasons[self.game.loss_reason] += 1
+                    else:
+                        # 単純化されたloss_reasonに変換
+                        if self.game.loss_reason in [FAILED_CAST_BOTH_WITH_WIND_AND_VALAKUT, FAILED_CAST_BOTH_WITH_WIND_WITHOUT_VALAKUT, 
+                                                    FAILED_CAST_BOTH_WITHOUT_WIND_WITH_VALAKUT, FAILED_CAST_BOTH_WITHOUT_WIND_AND_VALAKUT]:
+                            loss_reasons[FAILED_CAST_BOTH] += 1
+                        elif self.game.loss_reason in [CAST_VALAKUT_FAILED_WIND_WITH_WIND, CAST_VALAKUT_FAILED_WIND_WITHOUT_WIND]:
+                            loss_reasons[CAST_VALAKUT_FAILED_WIND] += 1
+                        elif self.game.loss_reason in [CAST_WIND_FAILED_TENDRILS_WITH_BESEECH_OR_TENDRILS, CAST_WIND_FAILED_TENDRILS_WITHOUT_BESEECH_OR_TENDRILS]:
+                            loss_reasons[CAST_WIND_FAILED_TENDRILS] += 1
+                        else:
+                            loss_reasons[self.game.loss_reason] += 1
                 else:
                     loss_reasons["Unknown"] += 1
         
@@ -174,14 +190,25 @@ class DeckAnalyzer:
         }
         
         # 各loss_reasonごとの欄を追加
-        for reason in [
-            FALIED_NECRO, FAILED_NECRO_COUNTERED, 
-            FAILED_CAST_BOTH_WITH_WIND_AND_VALAKUT, FAILED_CAST_BOTH_WITH_WIND_WITHOUT_VALAKUT, 
-            FAILED_CAST_BOTH_WITHOUT_WIND_WITH_VALAKUT, FAILED_CAST_BOTH_WITHOUT_WIND_AND_VALAKUT,
-            CAST_VALAKUT_FAILED_WIND_WITH_WIND, CAST_VALAKUT_FAILED_WIND_WITHOUT_WIND,
-            CAST_WIND_FAILED_TENDRILS_WITH_BESEECH_OR_TENDRILS, CAST_WIND_FAILED_TENDRILS_WITHOUT_BESEECH_OR_TENDRILS
-        ]:
-            stats[reason] = full_stats[reason]
+        if self.detailed_loss_reason:
+            # 詳細なloss_reasonを使用する場合
+            for reason in [
+                FALIED_NECRO, FAILED_NECRO_COUNTERED, 
+                FAILED_CAST_BOTH_WITH_WIND_AND_VALAKUT, FAILED_CAST_BOTH_WITH_WIND_WITHOUT_VALAKUT, 
+                FAILED_CAST_BOTH_WITHOUT_WIND_WITH_VALAKUT, FAILED_CAST_BOTH_WITHOUT_WIND_AND_VALAKUT,
+                CAST_VALAKUT_FAILED_WIND_WITH_WIND, CAST_VALAKUT_FAILED_WIND_WITHOUT_WIND,
+                CAST_WIND_FAILED_TENDRILS_WITH_BESEECH_OR_TENDRILS, CAST_WIND_FAILED_TENDRILS_WITHOUT_BESEECH_OR_TENDRILS
+            ]:
+                if reason in full_stats:
+                    stats[reason] = full_stats[reason]
+        else:
+            # 単純化されたloss_reasonを使用する場合
+            for reason in [
+                FALIED_NECRO, FAILED_NECRO_COUNTERED, 
+                FAILED_CAST_BOTH, CAST_VALAKUT_FAILED_WIND, CAST_WIND_FAILED_TENDRILS
+            ]:
+                if reason in full_stats:
+                    stats[reason] = full_stats[reason]
         
         return stats
     
@@ -248,7 +275,20 @@ class DeckAnalyzer:
                 
                 # 負けた理由を記録
                 if self.game.loss_reason:
-                    loss_reasons[self.game.loss_reason] += 1
+                    # 詳細なloss_reasonを使用するかどうかをチェック
+                    if self.detailed_loss_reason:
+                        loss_reasons[self.game.loss_reason] += 1
+                    else:
+                        # 単純化されたloss_reasonに変換
+                        if self.game.loss_reason in [FAILED_CAST_BOTH_WITH_WIND_AND_VALAKUT, FAILED_CAST_BOTH_WITH_WIND_WITHOUT_VALAKUT, 
+                                                    FAILED_CAST_BOTH_WITHOUT_WIND_WITH_VALAKUT, FAILED_CAST_BOTH_WITHOUT_WIND_AND_VALAKUT]:
+                            loss_reasons[FAILED_CAST_BOTH] += 1
+                        elif self.game.loss_reason in [CAST_VALAKUT_FAILED_WIND_WITH_WIND, CAST_VALAKUT_FAILED_WIND_WITHOUT_WIND]:
+                            loss_reasons[CAST_VALAKUT_FAILED_WIND] += 1
+                        elif self.game.loss_reason in [CAST_WIND_FAILED_TENDRILS_WITH_BESEECH_OR_TENDRILS, CAST_WIND_FAILED_TENDRILS_WITHOUT_BESEECH_OR_TENDRILS]:
+                            loss_reasons[CAST_WIND_FAILED_TENDRILS] += 1
+                        else:
+                            loss_reasons[self.game.loss_reason] += 1
                 else:
                     loss_reasons["Unknown"] += 1
         

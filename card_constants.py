@@ -24,6 +24,12 @@ CHANCELLOR_OF_ANNEX = "Chancellor of the Annex"
 FALIED_NECRO = "Failed to cast Necrodominance"
 FAILED_NECRO_COUNTERED = "Failed to resolve Necrodominance due to counter spell"
 
+# 単純化されたloss_reason
+FAILED_CAST_BOTH = "Failed to cast both Valakut and Borne Upon a Wind"
+CAST_VALAKUT_FAILED_WIND = "Cast Valakut but failed to cast Borne Upon a Wind"
+CAST_WIND_FAILED_TENDRILS = "Cast Borne Upon a Wind but failed to cast Tendrils"
+
+# 詳細なloss_reason
 # Wind唱えた後の失敗理由
 CAST_WIND_FAILED_TENDRILS_WITH_BESEECH_OR_TENDRILS = "Cast Borne Upon a Wind but failed to cast Tendrils with Beseech or Tendrils in hand"
 CAST_WIND_FAILED_TENDRILS_WITHOUT_BESEECH_OR_TENDRILS = "Cast Borne Upon a Wind but failed to cast Tendrils without Beseech or Tendrils in hand"

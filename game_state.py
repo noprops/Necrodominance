@@ -43,8 +43,7 @@ class GameState:
         self.mana_patterns_valakut_before_wind = ['3UR', '2UR', '3R', '2R']
         self.mana_patterns_valakut_after_wind = ['2RB', '2R']#['2RBB', '3RB', '2RB', '2R']
         # wind唱えた後はpetalなどを使えるので無理に色マナを浮かせなくて良い
-        self.mana_patterns_wind_with_beseech_and_petal = ['1UB', '2U', '1U']
-        self.mana_patterns_wind_with_beseech_without_petal = ['1UB', '3U', '2U', '1U']
+        self.mana_patterns_wind_with_beseech = ['1UB', '2U', '1U']
         self.mana_patterns_wind_with_valakut = ['3UR', '2UR', '1UR', '3U', '2U', '1U']
         self.mana_patterns_wind_without_beseech_and_valakut = ['1UBR', '1UB', '1UR', '3U', '2U', '1U']
     
@@ -82,8 +81,7 @@ class GameState:
 
         self.mana_patterns_valakut_before_wind = other.mana_patterns_valakut_before_wind
         self.mana_patterns_valakut_after_wind = other.mana_patterns_valakut_after_wind
-        self.mana_patterns_wind_with_beseech_and_petal = other.mana_patterns_wind_with_beseech_and_petal
-        self.mana_patterns_wind_with_beseech_without_petal = other.mana_patterns_wind_with_beseech_without_petal
+        self.mana_patterns_wind_with_beseech = other.mana_patterns_wind_with_beseech
         self.mana_patterns_wind_with_valakut = other.mana_patterns_wind_with_valakut
         self.mana_patterns_wind_without_beseech_and_valakut = other.mana_patterns_wind_without_beseech_and_valakut
     
@@ -1041,19 +1039,15 @@ class GameState:
         else:
             # Haven't cast Borne Upon a Wind
             if BORNE_UPON_WIND in self.hand:
-                mana_patterns = self.mana_patterns_wind_with_beseech_without_petal
+                mana_patterns = self.mana_patterns_wind_with_beseech
                 casting_cards = [BORNE_UPON_WIND]
 
-                if TENDRILS_OF_AGONY in self.hand or BESEECH_MIRROR in self.hand:
-                    if LOTUS_PETAL in self.hand or CHROME_MOX in self.hand:
-                        mana_patterns = self.mana_patterns_wind_with_beseech_and_petal
+                if TENDRILS_OF_AGONY not in self.hand and BESEECH_MIRROR not in self.hand:
+                    if VALAKUT_AWAKENING in self.hand:
+                        mana_patterns = self.mana_patterns_wind_with_valakut
                     else:
-                        mana_patterns = self.mana_patterns_wind_with_beseech_without_petal
-                elif VALAKUT_AWAKENING in self.hand:
-                    mana_patterns = self.mana_patterns_wind_with_valakut
-                else:
-                    # 手札にBeseech, Tendril, Valakutがない場合
-                    mana_patterns = self.mana_patterns_wind_without_beseech_and_valakut
+                        # 手札にBeseech, Tendril, Valakutがない場合
+                        mana_patterns = self.mana_patterns_wind_without_beseech_and_valakut
                 
                 for mana_cost in mana_patterns:
                     if self.try_generate_mana(mana_cost, casting_cards):

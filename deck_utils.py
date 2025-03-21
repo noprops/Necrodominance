@@ -4,12 +4,14 @@ from card_constants import *
 
 # フィールドの優先順位リスト（基本とマリガン回数ごとの統計情報を含む）
 DEFAULT_PRIORITY_FIELDS = [
-    'deck_name', 'deck_type', 'initial_hand', 'bottom_list', 'kept_card', 'bottom_cards', 
-    'cast_summoners_pact_before_draw', 'draw_count', 'total_games', 'win_rate', 
+    'pattern_name', 'initial_hand', 'bottom_list', 'cast_summoners_pact', 'cast_summoners_pact_before_draw',
+    'deck_name', 'deck_type', 'kept_card', 'bottom_cards', 
+    'draw_count', 'total_games', 'win_rate', 
     'cast_necro_rate', 'total_cast_necro', 'cast_necro_count', 'necro_resolve_count', 
     'necro_countered_count', 'necro_resolve_rate', 'win_after_necro_resolve_rate',
     'total_wins', 'total_losses', 'wins', 'losses', 'failed_necro_count',
     FALIED_NECRO, FAILED_NECRO_COUNTERED, 
+    FAILED_CAST_BOTH, CAST_VALAKUT_FAILED_WIND, CAST_WIND_FAILED_TENDRILS,
     FAILED_CAST_BOTH_WITH_WIND_AND_VALAKUT, FAILED_CAST_BOTH_WITH_WIND_WITHOUT_VALAKUT, 
     FAILED_CAST_BOTH_WITHOUT_WIND_WITH_VALAKUT, FAILED_CAST_BOTH_WITHOUT_WIND_AND_VALAKUT,
     CAST_VALAKUT_FAILED_WIND_WITH_WIND, CAST_VALAKUT_FAILED_WIND_WITHOUT_WIND,

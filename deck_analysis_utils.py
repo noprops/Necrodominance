@@ -1,12 +1,240 @@
 from game_state import *
 from deck_utils import get_filename_without_extension, create_deck, save_results_to_csv, DEFAULT_PRIORITY_FIELDS
 from deck_analyzer import DeckAnalyzer
-from collections import defaultdict
 import time
 import datetime
 
+# 定数
 BEST_DECK_PATH = 'decks/gemstone4_paradise0_cantor0_chrome4_wind4_valakut3.txt'
+DEFAULT_ITERATIONS = 100000
 
+def run_test_patterns(analyzer: DeckAnalyzer, pattern_list: list, filename: str, iterations: int = DEFAULT_ITERATIONS, sort_by_win_rate: bool = False):
+    """
+    テストパターンのリストに対してシミュレーションを実行する汎用関数
+    
+    各パターンは以下の形式のディクショナリです：
+    {
+        'name': str,  # パターン名
+        'deck': list[str],  # デッキ
+        'initial_hand': list[str],  # 初期手札（空リストの場合はrun_multiple_simulations_without_initial_handを使用）
+        'bottom_list': list[str],  # デッキボトムに戻すカードのリスト
+        'cast_summoners_pact': bool,  # Summoner's Pactをキャストするかどうか
+        'draw_count': int  # ドロー数
+    }
+    
+    Args:
+        analyzer: DeckAnalyzerインスタンス
+        pattern_list: テストパターンのリスト
+        filename: 結果を保存するCSVファイルの名前（拡張子なし）
+        iterations: シミュレーション回数
+        sort_by_win_rate: 結果をwin_rateでソートするかどうか（デフォルトはFalse）
+        
+    Returns:
+        各パターンの結果のリスト
+    """
+    results = []
+    
+    print(f"\nRunning {len(pattern_list)} test patterns with {iterations} iterations each")
+    
+    for i, pattern in enumerate(pattern_list):
+        name = pattern.get('name', f'Pattern {i+1}')
+        deck = pattern.get('deck', [])
+        initial_hand = pattern.get('initial_hand', [])
+        bottom_list = pattern.get('bottom_list', [])
+        cast_summoners_pact = pattern.get('cast_summoners_pact', False)
+        draw_count = pattern.get('draw_count', 19)
+        
+        print(f"\nRunning pattern: {name}")
+        print(f"Initial hand: {', '.join(initial_hand) if initial_hand else 'None'}")
+        print(f"Bottom list: {', '.join(bottom_list) if bottom_list else 'None'}")
+        print(f"Cast Summoner's Pact: {cast_summoners_pact}")
+        print(f"Draw count: {draw_count}")
+        
+        # 初期手札が空の場合はrun_multiple_simulations_without_initial_handを使用
+        if not initial_hand:
+            stats = analyzer.run_multiple_simulations_without_initial_hand(
+                deck, draw_count, True, False, cast_summoners_pact
+            )
+        else:
+            # 初期手札が指定されている場合はrun_multiple_simulations_with_initial_handを使用
+            stats = analyzer.run_multiple_simulations_with_initial_hand(
+                deck, initial_hand, bottom_list, draw_count, iterations
+            )
+        
+        # 結果にパターン情報を追加
+        result = stats.copy()
+        result['pattern_name'] = name
+        result['initial_hand'] = ', '.join(initial_hand) if initial_hand else 'None'
+        result['bottom_list'] = ', '.join(bottom_list) if bottom_list else 'None'
+        result['cast_summoners_pact'] = cast_summoners_pact
+        
+        results.append(result)
+    
+    # sort_by_win_rateがTrueの場合のみ結果をソート
+    if sort_by_win_rate:
+        results.sort(key=lambda x: x['win_rate'], reverse=True)
+    
+    # 結果を表示
+    print("\nTest Pattern Results:")
+    for result in results:
+        print(f"Pattern: {result['pattern_name']}, Win Rate: {result['win_rate']:.2f}%")
+    
+    # 結果をCSVに保存
+    save_results_to_csv(filename, results, DEFAULT_PRIORITY_FIELDS)
+    
+    return results
+
+def compare_summoners_pact_strategies(analyzer: DeckAnalyzer, deck_path: str = BEST_DECK_PATH, draw_count: int = 19, iterations: int = DEFAULT_ITERATIONS):
+    """
+    複数の初期手札と底札の組み合わせについて、Summoner's Pactをキャストするかどうかを比較する関数
+    
+    以下の組み合わせについて、cast_summoners_pactがTrueとFalseの両方のケースをテストします：
+    - bottom_chrome: [GEMSTONE_MINE, DARK_RITUAL, NECRODOMINANCE, SUMMONERS_PACT, GEMSTONE_MINE, GEMSTONE_MINE, CHROME_MOX]
+      底札: [GEMSTONE_MINE, GEMSTONE_MINE, CHROME_MOX]
+    - bottom_manamorphose: [GEMSTONE_MINE, DARK_RITUAL, NECRODOMINANCE, SUMMONERS_PACT, GEMSTONE_MINE, GEMSTONE_MINE, MANAMORPHOSE]
+      底札: [GEMSTONE_MINE, GEMSTONE_MINE, MANAMORPHOSE]
+    - bottom_wind: [GEMSTONE_MINE, DARK_RITUAL, NECRODOMINANCE, SUMMONERS_PACT, GEMSTONE_MINE, GEMSTONE_MINE, BORNE_UPON_WIND]
+      底札: [GEMSTONE_MINE, GEMSTONE_MINE, BORNE_UPON_WIND]
+    - bottom_pact_of_negation: [GEMSTONE_MINE, DARK_RITUAL, NECRODOMINANCE, SUMMONERS_PACT, GEMSTONE_MINE, GEMSTONE_MINE, PACT_OF_NEGATION]
+      底札: [GEMSTONE_MINE, GEMSTONE_MINE, PACT_OF_NEGATION]
+    - bottom_dark_ritual: [GEMSTONE_MINE, DARK_RITUAL, NECRODOMINANCE, SUMMONERS_PACT, GEMSTONE_MINE, GEMSTONE_MINE, DARK_RITUAL]
+      底札: [GEMSTONE_MINE, GEMSTONE_MINE, DARK_RITUAL]
+    
+    Args:
+        analyzer: DeckAnalyzerインスタンス
+        deck_path: デッキファイルのパス
+        draw_count: ドロー数
+        iterations: シミュレーション回数
+        
+    Returns:
+        各組み合わせの結果のリスト
+    """
+    # デッキを読み込む
+    deck = create_deck(deck_path)
+    
+    # 初期手札と底札の組み合わせを定義
+    test_cases = [
+        {
+            'name': 'basic_hand',
+            'initial_hand': [GEMSTONE_MINE, DARK_RITUAL, NECRODOMINANCE, SUMMONERS_PACT],
+            'bottom_list': []
+        },
+        {
+            'name': 'bottom_chrome',
+            'initial_hand': [GEMSTONE_MINE, DARK_RITUAL, NECRODOMINANCE, SUMMONERS_PACT, GEMSTONE_MINE, GEMSTONE_MINE, CHROME_MOX],
+            'bottom_list': [GEMSTONE_MINE, GEMSTONE_MINE, CHROME_MOX]
+        },
+        {
+            'name': 'bottom_manamorphose',
+            'initial_hand': [GEMSTONE_MINE, DARK_RITUAL, NECRODOMINANCE, SUMMONERS_PACT, GEMSTONE_MINE, GEMSTONE_MINE, MANAMORPHOSE],
+            'bottom_list': [GEMSTONE_MINE, GEMSTONE_MINE, MANAMORPHOSE]
+        },
+        {
+            'name': 'bottom_wind',
+            'initial_hand': [GEMSTONE_MINE, DARK_RITUAL, NECRODOMINANCE, SUMMONERS_PACT, GEMSTONE_MINE, GEMSTONE_MINE, BORNE_UPON_WIND],
+            'bottom_list': [GEMSTONE_MINE, GEMSTONE_MINE, BORNE_UPON_WIND]
+        },
+        {
+            'name': 'bottom_pact_of_negation',
+            'initial_hand': [GEMSTONE_MINE, DARK_RITUAL, NECRODOMINANCE, SUMMONERS_PACT, GEMSTONE_MINE, GEMSTONE_MINE, PACT_OF_NEGATION],
+            'bottom_list': [GEMSTONE_MINE, GEMSTONE_MINE, PACT_OF_NEGATION]
+        },
+        {
+            'name': 'bottom_dark_ritual',
+            'initial_hand': [GEMSTONE_MINE, DARK_RITUAL, NECRODOMINANCE, SUMMONERS_PACT, GEMSTONE_MINE, GEMSTONE_MINE, DARK_RITUAL],
+            'bottom_list': [GEMSTONE_MINE, GEMSTONE_MINE, DARK_RITUAL]
+        },
+        {
+            'name': 'bottom_unnecessary_cards',
+            'initial_hand': [GEMSTONE_MINE, DARK_RITUAL, NECRODOMINANCE, SUMMONERS_PACT, GEMSTONE_MINE, CHROME_MOX, PACT_OF_NEGATION],
+            'bottom_list': [GEMSTONE_MINE, CHROME_MOX, PACT_OF_NEGATION]
+        },
+        {
+            'name': 'bottom_necessary_cards',
+            'initial_hand': [GEMSTONE_MINE, DARK_RITUAL, NECRODOMINANCE, SUMMONERS_PACT, MANAMORPHOSE, BORNE_UPON_WIND, VALAKUT_AWAKENING],
+            'bottom_list': [MANAMORPHOSE, BORNE_UPON_WIND, VALAKUT_AWAKENING]
+        }
+    ]
+    
+    # テストケースごとにパターンを作成し、「Do not cast」と「Cast」のペアで追加
+    all_patterns = []
+    
+    for test_case in test_cases:
+        case_name = test_case['name']
+        initial_hand = test_case['initial_hand']
+        bottom_list = test_case['bottom_list']
+        
+        print(f"\nTesting case {case_name}:")
+        print(f"Initial hand: {', '.join(initial_hand)}")
+        print(f"Bottom list: {', '.join(bottom_list)}")
+        
+        # このテストケースの「Do not cast」と「Cast」のパターンをペアで追加
+        # 「Do not cast」を先に追加
+        all_patterns.append({
+            'name': f'Case {case_name} - Do not cast Summoner\'s Pact',
+            'deck': deck,
+            'initial_hand': initial_hand,
+            'bottom_list': bottom_list,
+            'cast_summoners_pact': False,
+            'draw_count': draw_count
+        })
+        
+        # 次に「Cast」を追加
+        all_patterns.append({
+            'name': f'Case {case_name} - Cast Summoner\'s Pact',
+            'deck': deck,
+            'initial_hand': initial_hand,
+            'bottom_list': bottom_list,
+            'cast_summoners_pact': True,
+            'draw_count': draw_count
+        })
+    
+    # すべてのパターンを一度に実行
+    filename = "compare_summoners_pact_strategies_all_cases"
+    results = run_test_patterns(analyzer, all_patterns, filename, iterations)
+    
+    # 結果を整理
+    all_results = []
+    
+    for test_case in test_cases:
+        case_name = test_case['name']
+        initial_hand = test_case['initial_hand']
+        bottom_list = test_case['bottom_list']
+        
+        # 結果を取得
+        result_without_cast = next(r for r in results if f'Case {case_name} - Do not cast' in r['pattern_name'])
+        result_with_cast = next(r for r in results if f'Case {case_name} - Cast Summoner' in r['pattern_name'])
+        
+        win_rate_without_cast = result_without_cast['win_rate']
+        win_rate_with_cast = result_with_cast['win_rate']
+        win_rate_diff = win_rate_with_cast - win_rate_without_cast
+        
+        # 結果を表示
+        print(f"\nCase {case_name} - Summoner's Pact Casting Strategy Comparison Results:")
+        print(f"Do not cast Summoner's Pact: Win Rate = {win_rate_without_cast:.2f}%")
+        print(f"Cast Summoner's Pact: Win Rate = {win_rate_with_cast:.2f}%")
+        print(f"Difference (Cast - Do not cast): {win_rate_diff:.2f}%")
+        
+        # 勝率が高い方の戦略を表示
+        if win_rate_with_cast > win_rate_without_cast:
+            print(f"Conclusion for Case {case_name}: Casting Summoner's Pact is better")
+        else:
+            print(f"Conclusion for Case {case_name}: Not casting Summoner's Pact is better")
+        
+        # 結果をリストに追加
+        all_results.append({
+            'case': case_name,
+            'initial_hand': ', '.join(initial_hand),
+            'bottom_list': ', '.join(bottom_list),
+            'win_rate_without_cast': win_rate_without_cast,
+            'win_rate_with_cast': win_rate_with_cast,
+            'win_rate_diff': win_rate_diff,
+            'better_strategy': 'Cast Summoner\'s Pact' if win_rate_with_cast > win_rate_without_cast else 'Do not cast Summoner\'s Pact'
+        })
+    
+    return all_results
+
+## old methods
 def create_custom_deck(card_counts: dict, base_deck_path: str = 'decks/gemstone4_paradise0_cantor1_chrome4_wind3_valakut3.txt') -> list:
     """
     指定されたカード枚数でデッキを作成する関数
@@ -516,208 +744,31 @@ def compare_chancellor_decks_against_counterspells(analyzer: DeckAnalyzer, itera
     
     return results
 
-def analyze_summoners_pact_casting(analyzer: DeckAnalyzer, initial_hand: list[str], bottom_list: list[str] = [], deck_path: str = BEST_DECK_PATH, draw_count: int = 19, iterations: int = 100000):
-    """
-    Summoner's Pactをキャストするかどうかを分析する関数
-    
-    指定された初期手札を使用して、Summoner's Pactをキャストする場合としない場合で勝率を比較します。
-    DeckAnalyzerクラスを使用してシミュレーションを実行します。
-    
-    Args:
-        analyzer: DeckAnalyzerインスタンス
-        initial_hand: 初期手札
-        bottom_list: デッキボトムに戻すカードのリスト
-        deck_path: デッキファイルのパス
-        draw_count: ドロー数
-        iterations: シミュレーション回数
-        
-    Returns:
-        比較結果の辞書
-    """
-    # デッキを読み込む
-    deck = create_deck(deck_path)
-    deck_name = get_filename_without_extension(deck_path)
-    
-    # 結果を格納するリスト
-    results = []
-    
-    print(f"\nAnalyzing Summoner's Pact casting strategies for deck: {deck_path}")
-    print(f"Initial hand: {', '.join(initial_hand)}")
-    
-    # Summoner's Pactをキャストしない場合
-    print("Testing strategy: Do not cast Summoner's Pact")
-    
-    # DeckAnalyzerのrun_multiple_simulations_with_initial_hand関数を使用
-    stats_without_cast = analyzer.run_multiple_simulations_with_initial_hand(deck, initial_hand, bottom_list, draw_count, iterations)
-    
-    # 結果を追加
-    result_without_cast = stats_without_cast.copy()
-    result_without_cast['initial_hand'] = ', '.join(initial_hand)
-    result_without_cast['bottom_cards'] = ', '.join(bottom_list) if bottom_list else ''
-    result_without_cast['cast_summoners_pact_before_draw'] = False
-    
-    # 必要なフィールドが空白にならないようにする
-    if 'wins' in result_without_cast and 'total_wins' not in result_without_cast:
-        result_without_cast['total_wins'] = result_without_cast['wins']
-    
-    if 'losses' in result_without_cast and 'total_losses' not in result_without_cast:
-        result_without_cast['total_losses'] = result_without_cast['losses']
-    
-    if 'total_cast_necro' not in result_without_cast and 'cast_necro_count' in result_without_cast:
-        result_without_cast['total_cast_necro'] = result_without_cast['cast_necro_count']
-    elif 'cast_necro_count' not in result_without_cast and 'total_cast_necro' in result_without_cast:
-        result_without_cast['cast_necro_count'] = result_without_cast['total_cast_necro']
-    
-    results.append(result_without_cast)
-    
-    # Summoner's Pactをキャストする場合
-    print("Testing strategy: Cast Summoner's Pact")
-    
-    # DeckAnalyzerのrun_multiple_simulations_with_initial_hand関数を使用
-    # ただし、GameStateのcast_summoners_pact_before_draw=Trueを設定するために
-    # 一時的にanalyzer.gameの設定を変更
-    
-    # 元の設定を保存
-    original_debug_print = analyzer.game.debug_print
-    
-    # デバッグ出力を無効化
-    analyzer.game.debug_print = False
-    
-    # Summoner's Pactをキャストする場合のシミュレーション用の関数を定義
-    def run_with_summoners_pact(deck, initial_hand, bottom_list, draw_count):
-        # デッキをコピーしてシャッフル
-        deck_copy = deck.copy()
-        random.shuffle(deck_copy)
-        
-        # ゲームを実行（cast_summoners_pact_before_draw=True）
-        return analyzer.game.run_with_initial_hand(deck_copy, initial_hand, bottom_list, draw_count, cast_summoners_pact_before_draw=True)
-    
-    # シミュレーション実行
-    wins_with_cast = 0
-    losses_with_cast = 0
-    cast_necro_count = 0
-    failed_necro_count = 0
-    loss_reasons = defaultdict(int)
-    
-    for _ in range(iterations):
-        # ゲームをリセット
-        analyzer.game.reset_game()
-        
-        # Summoner's Pactをキャストするシミュレーションを実行
-        result = run_with_summoners_pact(deck, initial_hand, bottom_list, draw_count)
-        
-        # 結果を集計
-        if result:
-            wins_with_cast += 1
-        else:
-            losses_with_cast += 1
-            
-            # 負けた理由を記録
-            if analyzer.game.loss_reason == FALIED_NECRO:
-                failed_necro_count += 1
-            
-            if analyzer.game.loss_reason:
-                loss_reasons[analyzer.game.loss_reason] += 1
-            else:
-                loss_reasons["Unknown"] += 1
-        
-        # Necroを唱えたかどうかをカウント
-        if analyzer.game.did_cast_necro:
-            cast_necro_count += 1
-    
-    # 元の設定に戻す
-    analyzer.game.debug_print = original_debug_print
-    
-    # 勝率と各種統計情報を計算
-    win_rate_with_cast = wins_with_cast / iterations * 100
-    cast_necro_rate = cast_necro_count / iterations * 100
-    win_after_necro_resolve_rate = wins_with_cast / cast_necro_count * 100 if cast_necro_count > 0 else 0
-    
-    # 結果を追加
-    result_with_cast = {
-        'initial_hand': ', '.join(initial_hand),
-        'bottom_cards': ', '.join(bottom_list) if bottom_list else '',
-        'cast_summoners_pact_before_draw': True,
-        'draw_count': draw_count,
-        'total_games': iterations,
-        'total_wins': wins_with_cast,
-        'wins': wins_with_cast,
-        'total_losses': losses_with_cast,
-        'losses': losses_with_cast,
-        'win_rate': win_rate_with_cast,
-        'cast_necro_rate': cast_necro_rate,
-        'total_cast_necro': cast_necro_count,
-        'cast_necro_count': cast_necro_count,
-        'failed_necro_count': failed_necro_count,
-        'win_after_necro_resolve_rate': win_after_necro_resolve_rate
-    }
-    
-    # 各loss_reasonごとの欄を追加
-    for reason in [
-        FALIED_NECRO, FAILED_NECRO_COUNTERED, 
-        FAILED_CAST_BOTH_WITH_WIND_AND_VALAKUT, FAILED_CAST_BOTH_WITH_WIND_WITHOUT_VALAKUT, 
-        FAILED_CAST_BOTH_WITHOUT_WIND_WITH_VALAKUT, FAILED_CAST_BOTH_WITHOUT_WIND_AND_VALAKUT,
-        CAST_VALAKUT_FAILED_WIND_WITH_WIND, CAST_VALAKUT_FAILED_WIND_WITHOUT_WIND,
-        CAST_WIND_FAILED_TENDRILS_WITH_BESEECH_OR_TENDRILS, CAST_WIND_FAILED_TENDRILS_WITHOUT_BESEECH_OR_TENDRILS
-    ]:
-        result_with_cast[reason] = loss_reasons[reason]
-    results.append(result_with_cast)
-    
-    # 勝率の差を計算
-    win_rate_without_cast = stats_without_cast['win_rate']
-    win_rate_diff = win_rate_with_cast - win_rate_without_cast
-    
-    # 結果を表示
-    print("\nSummoner's Pact Casting Strategy Comparison Results:")
-    print(f"Do not cast Summoner's Pact: Win Rate = {win_rate_without_cast:.2f}%")
-    print(f"Cast Summoner's Pact: Win Rate = {win_rate_with_cast:.2f}%")
-    print(f"Difference (Cast - Do not cast): {win_rate_diff:.2f}%")
-    
-    # 勝率が高い方の戦略を表示
-    if win_rate_with_cast > win_rate_without_cast:
-        print("Conclusion: Casting Summoner's Pact is better")
-    else:
-        print("Conclusion: Not casting Summoner's Pact is better")
-    
-    # 初期手札と底札からファイル名を生成
-    hand_str = '_'.join([card.split(' ')[0] for card in initial_hand])
-    bottom_str = '_bottom_' + '_'.join([card.split(' ')[0] for card in bottom_list]) if bottom_list else ''
-    filename = f"analyze_summoners_pact_{hand_str}{bottom_str}"
-    
-    # 結果をCSVに保存
-    save_results_to_csv(filename, results, DEFAULT_PRIORITY_FIELDS)
-    
-    return {
-        'win_rate_without_cast': win_rate_without_cast,
-        'win_rate_with_cast': win_rate_with_cast,
-        'win_rate_diff': win_rate_diff,
-        'better_strategy': 'Cast Summoner\'s Pact' if win_rate_with_cast > win_rate_without_cast else 'Do not cast Summoner\'s Pact'
-    }
 
 if __name__ == "__main__":
-    iterations = 100000
     analyzer = DeckAnalyzer()
     
     print("シミュレーション開始: ", datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
     start_time = time.time()
     
-    #compare_decks(analyzer, iterations)
-    #analyze_draw_counts(analyzer, iterations=100000)
-    compare_initial_hands(analyzer, iterations)
-    #compare_chancellor_decks(analyzer, iterations)
-    #compare_chancellor_decks_against_counterspells(analyzer, iterations)
-    #compare_chancellor_decks_against_counterspells(analyzer, iterations=10000)
+    # Summoner's Pactをキャストするかどうかの戦略を比較
+    print("\n=== compare_summoners_pact_strategies ===")
+    compare_summoners_pact_strategies(analyzer)
 
-    #analyze_summoners_pact_casting(analyzer, initial_hand=[GEMSTONE_MINE, DARK_RITUAL, NECRODOMINANCE, SUMMONERS_PACT], iterations= 10000)
+    #compare_decks(analyzer, DEFAULT_ITERATIONS)
+    #analyze_draw_counts(analyzer)
+    #compare_initial_hands(analyzer, DEFAULT_ITERATIONS)
+    #compare_chancellor_decks(analyzer, DEFAULT_ITERATIONS)
+    #compare_chancellor_decks_against_counterspells(analyzer, DEFAULT_ITERATIONS)
     '''
     initial_hand = [GEMSTONE_MINE, DARK_RITUAL, NECRODOMINANCE, LOTUS_PETAL, BORNE_UPON_WIND, MANAMORPHOSE, VALAKUT_AWAKENING]
-    compare_keep_cards_for_hand(analyzer, initial_hand, iterations=iterations)
+    compare_keep_cards_for_hand(analyzer, initial_hand)
     initial_hand = [GEMSTONE_MINE, DARK_RITUAL, NECRODOMINANCE, LOTUS_PETAL, LOTUS_PETAL, BORNE_UPON_WIND, VALAKUT_AWAKENING]
-    compare_keep_cards_for_hand(analyzer, initial_hand, iterations=iterations)
+    compare_keep_cards_for_hand(analyzer, initial_hand)
     initial_hand = [GEMSTONE_MINE, DARK_RITUAL, NECRODOMINANCE, LOTUS_PETAL, LOTUS_PETAL, BORNE_UPON_WIND, MANAMORPHOSE]
-    compare_keep_cards_for_hand(analyzer, initial_hand, iterations=iterations)
+    compare_keep_cards_for_hand(analyzer, initial_hand)
     initial_hand = [GEMSTONE_MINE, DARK_RITUAL, NECRODOMINANCE, LOTUS_PETAL, LOTUS_PETAL, MANAMORPHOSE, VALAKUT_AWAKENING]
-    compare_keep_cards_for_hand(analyzer, initial_hand, iterations=iterations)
+    compare_keep_cards_for_hand(analyzer, initial_hand)
     '''
     
     end_time = time.time()
