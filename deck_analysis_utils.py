@@ -58,7 +58,7 @@ def run_test_patterns(analyzer: DeckAnalyzer, pattern_list: list, filename: str,
         else:
             # 初期手札が指定されている場合はrun_multiple_simulations_with_initial_handを使用
             stats = analyzer.run_multiple_simulations_with_initial_hand(
-                deck, initial_hand, bottom_list, draw_count, iterations
+                deck, initial_hand, bottom_list, draw_count, iterations, cast_summoners_pact
             )
         
         # 結果にパターン情報を追加

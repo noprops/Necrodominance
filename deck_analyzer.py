@@ -104,7 +104,7 @@ class DeckAnalyzer:
         
         return stats
     
-    def run_multiple_simulations_with_initial_hand(self, deck: list[str], initial_hand: list[str], bottom_list: list[str] = [], draw_count: int = 19, iterations: int = 10000) -> dict:
+    def run_multiple_simulations_with_initial_hand(self, deck: list[str], initial_hand: list[str], bottom_list: list[str] = [], draw_count: int = 19, iterations: int = 10000, cast_summoners_pact: bool = False) -> dict:
         """
         初期手札が指定されている場合のシミュレーションを実行する関数
         
@@ -136,7 +136,7 @@ class DeckAnalyzer:
             self.game.reset_game()
             random.shuffle(deck)
             # 初期手札が指定されている場合は、run_with_initial_handを呼び出す
-            result = self.game.run_with_initial_hand(deck, initial_hand, bottom_list, draw_count)
+            result = self.game.run_with_initial_hand(deck, initial_hand, bottom_list, draw_count, cast_summoners_pact)
             mulligan_count = self.game.mulligan_count
             
             # Necroを唱えたかどうかをカウント
