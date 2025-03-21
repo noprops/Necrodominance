@@ -98,17 +98,11 @@ def compare_summoners_pact_strategies(analyzer: DeckAnalyzer, deck_path: str = B
     """
     複数の初期手札と底札の組み合わせについて、Summoner's Pactをキャストするかどうかを比較する関数
     
-    以下の組み合わせについて、cast_summoners_pactがTrueとFalseの両方のケースをテストします：
-    - bottom_chrome: [GEMSTONE_MINE, DARK_RITUAL, NECRODOMINANCE, SUMMONERS_PACT, GEMSTONE_MINE, GEMSTONE_MINE, CHROME_MOX]
-      底札: [GEMSTONE_MINE, GEMSTONE_MINE, CHROME_MOX]
-    - bottom_manamorphose: [GEMSTONE_MINE, DARK_RITUAL, NECRODOMINANCE, SUMMONERS_PACT, GEMSTONE_MINE, GEMSTONE_MINE, MANAMORPHOSE]
-      底札: [GEMSTONE_MINE, GEMSTONE_MINE, MANAMORPHOSE]
-    - bottom_wind: [GEMSTONE_MINE, DARK_RITUAL, NECRODOMINANCE, SUMMONERS_PACT, GEMSTONE_MINE, GEMSTONE_MINE, BORNE_UPON_WIND]
-      底札: [GEMSTONE_MINE, GEMSTONE_MINE, BORNE_UPON_WIND]
-    - bottom_pact_of_negation: [GEMSTONE_MINE, DARK_RITUAL, NECRODOMINANCE, SUMMONERS_PACT, GEMSTONE_MINE, GEMSTONE_MINE, PACT_OF_NEGATION]
-      底札: [GEMSTONE_MINE, GEMSTONE_MINE, PACT_OF_NEGATION]
-    - bottom_dark_ritual: [GEMSTONE_MINE, DARK_RITUAL, NECRODOMINANCE, SUMMONERS_PACT, GEMSTONE_MINE, GEMSTONE_MINE, DARK_RITUAL]
-      底札: [GEMSTONE_MINE, GEMSTONE_MINE, DARK_RITUAL]
+    様々なカードの組み合わせについて、cast_summoners_pactがTrueとFalseの両方のケースをテストします。
+    基本的な初期手札は [GEMSTONE_MINE, DARK_RITUAL, NECRODOMINANCE, SUMMONERS_PACT] で、
+    マリガンの場合は [GEMSTONE_MINE, DARK_RITUAL, NECRODOMINANCE, SUMMONERS_PACT, GEMSTONE_MINE, GEMSTONE_MINE, X] となり、
+    底札は [GEMSTONE_MINE, GEMSTONE_MINE, X] となります。
+    Xには様々なカードが入ります。
     
     Args:
         analyzer: DeckAnalyzerインスタンス
@@ -130,41 +124,40 @@ def compare_summoners_pact_strategies(analyzer: DeckAnalyzer, deck_path: str = B
             'bottom_list': []
         },
         {
-            'name': 'bottom_chrome',
-            'initial_hand': [GEMSTONE_MINE, DARK_RITUAL, NECRODOMINANCE, SUMMONERS_PACT, GEMSTONE_MINE, GEMSTONE_MINE, CHROME_MOX],
-            'bottom_list': [GEMSTONE_MINE, GEMSTONE_MINE, CHROME_MOX]
-        },
-        {
-            'name': 'bottom_manamorphose',
-            'initial_hand': [GEMSTONE_MINE, DARK_RITUAL, NECRODOMINANCE, SUMMONERS_PACT, GEMSTONE_MINE, GEMSTONE_MINE, MANAMORPHOSE],
-            'bottom_list': [GEMSTONE_MINE, GEMSTONE_MINE, MANAMORPHOSE]
-        },
-        {
-            'name': 'bottom_wind',
-            'initial_hand': [GEMSTONE_MINE, DARK_RITUAL, NECRODOMINANCE, SUMMONERS_PACT, GEMSTONE_MINE, GEMSTONE_MINE, BORNE_UPON_WIND],
-            'bottom_list': [GEMSTONE_MINE, GEMSTONE_MINE, BORNE_UPON_WIND]
-        },
-        {
-            'name': 'bottom_pact_of_negation',
-            'initial_hand': [GEMSTONE_MINE, DARK_RITUAL, NECRODOMINANCE, SUMMONERS_PACT, GEMSTONE_MINE, GEMSTONE_MINE, PACT_OF_NEGATION],
-            'bottom_list': [GEMSTONE_MINE, GEMSTONE_MINE, PACT_OF_NEGATION]
-        },
-        {
-            'name': 'bottom_dark_ritual',
-            'initial_hand': [GEMSTONE_MINE, DARK_RITUAL, NECRODOMINANCE, SUMMONERS_PACT, GEMSTONE_MINE, GEMSTONE_MINE, DARK_RITUAL],
-            'bottom_list': [GEMSTONE_MINE, GEMSTONE_MINE, DARK_RITUAL]
-        },
-        {
-            'name': 'bottom_unnecessary_cards',
-            'initial_hand': [GEMSTONE_MINE, DARK_RITUAL, NECRODOMINANCE, SUMMONERS_PACT, GEMSTONE_MINE, CHROME_MOX, PACT_OF_NEGATION],
-            'bottom_list': [GEMSTONE_MINE, CHROME_MOX, PACT_OF_NEGATION]
-        },
-        {
             'name': 'bottom_necessary_cards',
             'initial_hand': [GEMSTONE_MINE, DARK_RITUAL, NECRODOMINANCE, SUMMONERS_PACT, MANAMORPHOSE, BORNE_UPON_WIND, VALAKUT_AWAKENING],
             'bottom_list': [MANAMORPHOSE, BORNE_UPON_WIND, VALAKUT_AWAKENING]
         }
     ]
+    
+    # 様々なカードをXとして追加
+    cards_to_test = [
+        CHROME_MOX,
+        LOTUS_PETAL,
+        SUMMONERS_PACT,
+        ELVISH_SPIRIT_GUIDE,
+        SIMIAN_SPIRIT_GUIDE,
+        WILD_CANTOR,
+        MANAMORPHOSE,
+        VALAKUT_AWAKENING,
+        BORNE_UPON_WIND,
+        DARK_RITUAL,
+        CABAL_RITUAL,
+        NECRODOMINANCE,
+        BESEECH_MIRROR,
+        TENDRILS_OF_AGONY,
+        PACT_OF_NEGATION,
+        DURESS,
+        CHANCELLOR_OF_ANNEX
+    ]
+    
+    for card in cards_to_test:
+        card_name = card.split(' ')[0].lower()
+        test_cases.append({
+            'name': f'bottom_{card_name}',
+            'initial_hand': [GEMSTONE_MINE, DARK_RITUAL, NECRODOMINANCE, SUMMONERS_PACT, GEMSTONE_MINE, GEMSTONE_MINE, card],
+            'bottom_list': [GEMSTONE_MINE, GEMSTONE_MINE, card]
+        })
     
     # テストケースごとにパターンを作成し、「Do not cast」と「Cast」のペアで追加
     all_patterns = []
@@ -205,6 +198,8 @@ def compare_summoners_pact_strategies(analyzer: DeckAnalyzer, deck_path: str = B
     
     # 結果を整理
     all_results = []
+    better_cast = []
+    better_not_cast = []
     
     for test_case in test_cases:
         case_name = test_case['name']
@@ -228,8 +223,10 @@ def compare_summoners_pact_strategies(analyzer: DeckAnalyzer, deck_path: str = B
         # 勝率が高い方の戦略を表示
         if win_rate_with_cast > win_rate_without_cast:
             print(f"Conclusion for Case {case_name}: Casting Summoner's Pact is better")
+            better_cast.append(case_name)
         else:
             print(f"Conclusion for Case {case_name}: Not casting Summoner's Pact is better")
+            better_not_cast.append(case_name)
         
         # 結果をリストに追加
         all_results.append({
@@ -241,6 +238,15 @@ def compare_summoners_pact_strategies(analyzer: DeckAnalyzer, deck_path: str = B
             'win_rate_diff': win_rate_diff,
             'better_strategy': 'Cast Summoner\'s Pact' if win_rate_with_cast > win_rate_without_cast else 'Do not cast Summoner\'s Pact'
         })
+    
+    # Summoner's Pactをキャストする方が良いケースとキャストしない方が良いケースを表示
+    print("\n=== Summoner's Pactをキャストする方が良いケース ===")
+    for case in better_cast:
+        print(f"- {case}")
+    
+    print("\n=== Summoner's Pactをキャストしない方が良いケース ===")
+    for case in better_not_cast:
+        print(f"- {case}")
     
     return all_results
 
