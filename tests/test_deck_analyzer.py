@@ -78,13 +78,23 @@ class TestDeckAnalyzer(unittest.TestCase):
         
         # 初期手札Aの勝率を計算
         stats_a = self.analyzer.run_multiple_simulations_with_initial_hand(
-            deck_a.copy(), initial_hand_a, bottom_list_a, 19, iterations
+            deck=deck_a.copy(), 
+            initial_hand=initial_hand_a, 
+            bottom_list=bottom_list_a, 
+            draw_count=19, 
+            iterations=iterations, 
+            cast_summoners_pact=cast_summoners_pact
         )
         win_rate_a = stats_a['win_rate']
         
         # 初期手札Bの勝率を計算
         stats_b = self.analyzer.run_multiple_simulations_with_initial_hand(
-            deck_b.copy(), initial_hand_b, bottom_list_b, 19, iterations
+            deck=deck_b.copy(), 
+            initial_hand=initial_hand_b, 
+            bottom_list=bottom_list_b, 
+            draw_count=19, 
+            iterations=iterations, 
+            cast_summoners_pact=cast_summoners_pact
         )
         win_rate_b = stats_b['win_rate']
         
@@ -481,12 +491,22 @@ class TestDeckAnalyzer(unittest.TestCase):
         
         # 勝率を比較
         stats_a = self.analyzer.run_multiple_simulations_with_initial_hand(
-            deck_a.copy(), initial_hand, [], 19, ITERATIONS
+            deck=deck_a.copy(), 
+            initial_hand=initial_hand, 
+            bottom_list=[], 
+            draw_count=19, 
+            cast_summoners_pact=False, 
+            iterations=ITERATIONS
         )
         win_rate_a = stats_a['win_rate']
         
         stats_b = self.analyzer.run_multiple_simulations_with_initial_hand(
-            deck_b.copy(), initial_hand, [], 19, ITERATIONS
+            deck=deck_b.copy(), 
+            initial_hand=initial_hand, 
+            bottom_list=[], 
+            draw_count=19, 
+            cast_summoners_pact=False, 
+            iterations=ITERATIONS
         )
         win_rate_b = stats_b['win_rate']
         
@@ -554,12 +574,22 @@ class TestDeckAnalyzer(unittest.TestCase):
         
         # 勝率を比較
         stats_a = self.analyzer.run_multiple_simulations_with_initial_hand(
-            deck_a.copy(), initial_hand, [], 19, ITERATIONS
+            deck=deck_a.copy(), 
+            initial_hand=initial_hand, 
+            bottom_list=[], 
+            draw_count=19, 
+            iterations=ITERATIONS, 
+            cast_summoners_pact=False
         )
         win_rate_a = stats_a['win_rate']
         
         stats_b = self.analyzer.run_multiple_simulations_with_initial_hand(
-            deck_b.copy(), initial_hand, [], 19, ITERATIONS
+            deck=deck_b.copy(), 
+            initial_hand=initial_hand, 
+            bottom_list=[], 
+            draw_count=19, 
+            cast_summoners_pact=False, 
+            iterations=ITERATIONS
         )
         win_rate_b = stats_b['win_rate']
         

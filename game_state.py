@@ -1108,7 +1108,7 @@ class GameState:
         return True
 
     def run_with_initial_hand(self, deck: list[str], initial_hand: list[str], bottom_list: list[str],
-                              draw_count: int = 19, cast_summoners_pact_before_draw: bool = False) -> bool:
+                              draw_count: int = 19, cast_summoners_pact: bool = True) -> bool:
         """
         初期手札が指定されている場合のゲーム実行関数
         
@@ -1117,6 +1117,7 @@ class GameState:
             initial_hand: 初期手札
             bottom_list: デッキボトムに戻すカードのリスト（マリガン処理をシミュレート）
             draw_count: ドロー数
+            cast_summoners_pact: ネクロ設置後にSummoner's Pactを唱えてデッキをシャッフルするか？
             
         Returns:
             ゲームの勝敗結果（True: 勝ち, False: 負け）
@@ -1157,7 +1158,7 @@ class GameState:
         if not self.main_phase(False):
             return False
         
-        self.cast_spells_after_necro_resolved(cast_summoners_pact_before_draw)
+        self.cast_spells_after_necro_resolved(cast_summoners_pact)
 
         #print(f"after main phase self.hand = {self.hand}")
         #print(f"after main phase self.battlefield = {self.battlefield}")
@@ -1176,7 +1177,7 @@ class GameState:
             self.debug("You Lose.")
             return False
     
-    def run_without_initial_hand(self, deck: list[str], draw_count: int, mulligan_until_necro: bool, opponent_has_forces: bool = False, cast_summoners_pact_before_draw: bool = False) -> bool:
+    def run_without_initial_hand(self, deck: list[str], draw_count: int, mulligan_until_necro: bool, cast_summoners_pact: bool = True, opponent_has_forces: bool = False) -> bool:
         """
         初期手札が指定されていない場合のゲーム実行関数（マリガンを行う）
         
@@ -1184,6 +1185,8 @@ class GameState:
             deck: デッキ（カード名のリスト）
             draw_count: ドロー数
             mulligan_until_necro: ネクロを唱えられるまでマリガンするかどうか
+            opponent_has_forces: 相手がForceを持っているかどうか
+            cast_summoners_pact: ネクロ設置後にSummoner's Pactを唱えてデッキをシャッフルするか？
             
         Returns:
             ゲームの勝敗結果（True: 勝ち, False: 負け）
@@ -1205,9 +1208,9 @@ class GameState:
             self.draw_cards(7)
             
             opponent_force_count = self.get_opponent_force_count() if opponent_has_forces else 0
-            if self.main_phase(opponent_has_forces, opponent_force_count, False):
+            if self.main_phase(opponent_has_forces, opponent_force_count):
                 # Necroキャストに成功した場合
-                self.cast_spells_after_necro_resolved(cast_summoners_pact_before_draw)
+                self.cast_spells_after_necro_resolved(cast_summoners_pact)
                 # ループを抜ける
                 break
             elif self.loss_reason == FAILED_NECRO_COUNTERED:
@@ -1233,6 +1236,18 @@ if __name__ == "__main__":
     initial_hand = [GEMSTONE_MINE, DARK_RITUAL, NECRODOMINANCE, CABAL_RITUAL]
     #initial_hand = []
     if initial_hand:
-        game.run_with_initial_hand(deck, initial_hand, [], 19, False)
+        game.run_with_initial_hand(
+            deck=deck, 
+            initial_hand=initial_hand, 
+            bottom_list=[], 
+            draw_count=19, 
+            cast_summoners_pact=False
+        )
     else:
-        game.run_without_initial_hand(deck, 19, True)
+        game.run_without_initial_hand(
+            deck=deck, 
+            draw_count=19, 
+            mulligan_until_necro=True, 
+            cast_summoners_pact=True, 
+            opponent_has_forces=False
+        )

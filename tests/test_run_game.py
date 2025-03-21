@@ -42,7 +42,13 @@ class TestRunGame(unittest.TestCase):
         # Verify deck is 60 cards
         self.assertEqual(len(deck), 60, f"Deck is not 60 cards ({len(deck)} cards)")
         
-        result = self.game.run_with_initial_hand(deck, initial_hand, [], draw_count)
+        result = self.game.run_with_initial_hand(
+            deck=deck, 
+            initial_hand=initial_hand, 
+            bottom_list=[], 
+            draw_count=draw_count, 
+            cast_summoners_pact=True
+        )
         
         # Assert game result
         if expect_win:

@@ -104,7 +104,7 @@ class DeckAnalyzer:
         
         return stats
     
-    def run_multiple_simulations_with_initial_hand(self, deck: list[str], initial_hand: list[str], bottom_list: list[str] = [], draw_count: int = 19, iterations: int = 10000, cast_summoners_pact: bool = False) -> dict:
+    def run_multiple_simulations_with_initial_hand(self, deck: list[str], initial_hand: list[str], bottom_list: list[str] = [], draw_count: int = 19, cast_summoners_pact: bool = True, iterations: int = 10000) -> dict:
         """
         初期手札が指定されている場合のシミュレーションを実行する関数
         
@@ -114,6 +114,7 @@ class DeckAnalyzer:
             bottom_list: デッキボトムに戻すカードのリスト
             draw_count: ドロー数
             iterations: シミュレーション回数
+            cast_summoners_pact: ネクロ設置後にSummoner's Pactを唱えてデッキをシャッフルするか？
             
         Returns:
             シミュレーション結果の統計情報を含む辞書
@@ -136,7 +137,13 @@ class DeckAnalyzer:
             self.game.reset_game()
             random.shuffle(deck)
             # 初期手札が指定されている場合は、run_with_initial_handを呼び出す
-            result = self.game.run_with_initial_hand(deck, initial_hand, bottom_list, draw_count, cast_summoners_pact)
+            result = self.game.run_with_initial_hand(
+                deck=deck, 
+                initial_hand=initial_hand, 
+                bottom_list=bottom_list, 
+                draw_count=draw_count, 
+                cast_summoners_pact=cast_summoners_pact
+            )
             mulligan_count = self.game.mulligan_count
             
             # Necroを唱えたかどうかをカウント
@@ -212,7 +219,7 @@ class DeckAnalyzer:
         
         return stats
     
-    def run_multiple_simulations_without_initial_hand(self, deck: list[str], draw_count: int = 19, mulligan_until_necro: bool = True, opponent_has_forces: bool = False, iterations: int = 10000) -> dict:
+    def run_multiple_simulations_without_initial_hand(self, deck: list[str], draw_count: int = 19, mulligan_until_necro: bool = True, cast_summoners_pact: bool = True, opponent_has_forces: bool = False, iterations: int = 10000) -> dict:
         """
         初期手札が指定されていない場合のシミュレーションを実行する関数
         
@@ -221,6 +228,7 @@ class DeckAnalyzer:
             draw_count: ドロー数
             mulligan_until_necro: Necroを唱えるまでマリガンするかどうか
             opponent_has_forces: 相手がForceを持っているかどうか
+            cast_summoners_pact: ネクロ設置後にSummoner's Pactを唱えてデッキをシャッフルするか？
             iterations: シミュレーション回数
             
         Returns:
@@ -248,7 +256,13 @@ class DeckAnalyzer:
             self.game.reset_game()
             random.shuffle(deck)
             # 初期手札が指定されていない場合は、run_without_initial_handを呼び出す
-            result = self.game.run_without_initial_hand(deck, draw_count, mulligan_until_necro, opponent_has_forces)
+            result = self.game.run_without_initial_hand(
+                deck=deck, 
+                draw_count=draw_count, 
+                mulligan_until_necro=mulligan_until_necro, 
+                cast_summoners_pact=cast_summoners_pact, 
+                opponent_has_forces=opponent_has_forces
+            )
             mulligan_count = self.game.mulligan_count
             
             # Necroを唱えたかどうかをカウント
@@ -382,7 +396,14 @@ class DeckAnalyzer:
         results = []
         for draw_count in range(max_draw, min_draw - 1, -1):
             print(f"\nAnalyzing draw_count = {draw_count}")
-            stats = self.run_multiple_simulations_with_initial_hand(deck, initial_hand, [], draw_count, iterations)
+            stats = self.run_multiple_simulations_with_initial_hand(
+                deck=deck, 
+                initial_hand=initial_hand, 
+                bottom_list=[], 
+                draw_count=draw_count, 
+                cast_summoners_pact=True, 
+                iterations=iterations
+            )
             results.append(stats)
         
         # 不要な項目を削除
@@ -395,7 +416,14 @@ class DeckAnalyzer:
         
         for i, deck in enumerate(decks):
             deck_name = deck_names[i]
-            stats = self.run_multiple_simulations_without_initial_hand(deck, draw_count, True, opponent_has_forces, iterations)
+            stats = self.run_multiple_simulations_without_initial_hand(
+                deck=deck, 
+                draw_count=draw_count, 
+                mulligan_until_necro=True, 
+                cast_summoners_pact=True, 
+                opponent_has_forces=opponent_has_forces, 
+                iterations=iterations
+            )
             
             # デッキ名を追加
             stats['deck_name'] = deck_name
@@ -418,7 +446,14 @@ class DeckAnalyzer:
         results = []
         
         for initial_hand in initial_hands:
-            stats = self.run_multiple_simulations_with_initial_hand(deck, initial_hand, [], draw_count, iterations)
+            stats = self.run_multiple_simulations_with_initial_hand(
+                deck=deck, 
+                initial_hand=initial_hand, 
+                bottom_list=[], 
+                draw_count=draw_count, 
+                cast_summoners_pact=True, 
+                iterations=iterations
+            )
             
             # 初期手札の内容を追加
             stats['initial_hand'] = ', '.join(initial_hand)

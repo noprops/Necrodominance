@@ -6,7 +6,7 @@ import datetime
 
 # 定数
 BEST_DECK_PATH = 'decks/gemstone4_paradise0_cantor0_chrome4_wind4_valakut3.txt'
-DEFAULT_ITERATIONS = 100000
+DEFAULT_ITERATIONS = 1000000
 
 def run_test_patterns(analyzer: DeckAnalyzer, pattern_list: list, filename: str, iterations: int = DEFAULT_ITERATIONS, sort_by_win_rate: bool = False):
     """
@@ -53,12 +53,22 @@ def run_test_patterns(analyzer: DeckAnalyzer, pattern_list: list, filename: str,
         # 初期手札が空の場合はrun_multiple_simulations_without_initial_handを使用
         if not initial_hand:
             stats = analyzer.run_multiple_simulations_without_initial_hand(
-                deck, draw_count, True, False, cast_summoners_pact
+                deck=deck, 
+                draw_count=draw_count, 
+                mulligan_until_necro=True, 
+                cast_summoners_pact=cast_summoners_pact, 
+                opponent_has_forces=False, 
+                iterations=iterations
             )
         else:
             # 初期手札が指定されている場合はrun_multiple_simulations_with_initial_handを使用
             stats = analyzer.run_multiple_simulations_with_initial_hand(
-                deck, initial_hand, bottom_list, draw_count, iterations, cast_summoners_pact
+                deck=deck, 
+                initial_hand=initial_hand, 
+                bottom_list=bottom_list, 
+                draw_count=draw_count, 
+                cast_summoners_pact=cast_summoners_pact, 
+                iterations=iterations
             )
         
         # 結果にパターン情報を追加
@@ -617,7 +627,14 @@ def compare_keep_cards_for_hand(analyzer: DeckAnalyzer, initial_hand: list[str],
         print(f"Testing strategy: Keep {keep_card}, Bottom: {', '.join(bottom_list)}")
         
         # シミュレーション実行
-        stats = analyzer.run_multiple_simulations_with_initial_hand(deck, initial_hand, bottom_list, draw_count, iterations)
+        stats = analyzer.run_multiple_simulations_with_initial_hand(
+            deck=deck, 
+            initial_hand=initial_hand, 
+            bottom_list=bottom_list, 
+            draw_count=draw_count, 
+            cast_summoners_pact=True, 
+            iterations=iterations
+        )
         
         # 手札に残したカードをラベル付け
         stats['kept_card'] = keep_card
