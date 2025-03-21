@@ -6,7 +6,7 @@ import datetime
 
 # 定数
 BEST_DECK_PATH = 'decks/gemstone4_paradise0_cantor0_chrome4_wind4_valakut3.txt'
-DEFAULT_ITERATIONS = 1000000
+DEFAULT_ITERATIONS = 100000
 
 def run_test_patterns(analyzer: DeckAnalyzer, pattern_list: list, filename: str, iterations: int = DEFAULT_ITERATIONS, sort_by_win_rate: bool = False):
     """
@@ -156,7 +156,7 @@ def compare_summoners_pact_strategies(analyzer: DeckAnalyzer, deck_path: str = B
         test_cases.append({
             'name': f'bottom_{card_name}',
             'initial_hand': [GEMSTONE_MINE, DARK_RITUAL, NECRODOMINANCE, SUMMONERS_PACT, GEMSTONE_MINE, GEMSTONE_MINE, card],
-            'bottom_list': [GEMSTONE_MINE, GEMSTONE_MINE, card]
+            'bottom_list': [card]  # Xの1枚のみをボトムに戻す
         })
     
     # テストケースごとにパターンを作成し、「Do not cast」と「Cast」のペアで追加
