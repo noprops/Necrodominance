@@ -18,7 +18,7 @@ def run_test_patterns(analyzer: DeckAnalyzer, pattern_list: list, filename: str,
         'deck': list[str],  # デッキ
         'initial_hand': list[str],  # 初期手札（空リストの場合はrun_multiple_simulations_without_initial_handを使用）
         'bottom_list': list[str],  # デッキボトムに戻すカードのリスト
-        'cast_summoners_pact': bool,  # Summoner's Pactをキャストするかどうか
+        'summoners_pact_strategy': SummonersPactStrategy,  # Summoner's Pactの戦略
         'draw_count': int  # ドロー数
     }
     
@@ -41,13 +41,13 @@ def run_test_patterns(analyzer: DeckAnalyzer, pattern_list: list, filename: str,
         deck = pattern.get('deck', [])
         initial_hand = pattern.get('initial_hand', [])
         bottom_list = pattern.get('bottom_list', [])
-        cast_summoners_pact = pattern.get('cast_summoners_pact', False)
+        summoners_pact_strategy = pattern.get('summoners_pact_strategy', SummonersPactStrategy.NEVER_CAST)
         draw_count = pattern.get('draw_count', 19)
         
         print(f"\nRunning pattern: {name}")
         print(f"Initial hand: {', '.join(initial_hand) if initial_hand else 'None'}")
         print(f"Bottom list: {', '.join(bottom_list) if bottom_list else 'None'}")
-        print(f"Cast Summoner's Pact: {cast_summoners_pact}")
+        print(f"Summoner's Pact Strategy: {summoners_pact_strategy}")
         print(f"Draw count: {draw_count}")
         
         # 初期手札が空の場合はrun_multiple_simulations_without_initial_handを使用
@@ -56,7 +56,7 @@ def run_test_patterns(analyzer: DeckAnalyzer, pattern_list: list, filename: str,
                 deck=deck, 
                 draw_count=draw_count, 
                 mulligan_until_necro=True, 
-                cast_summoners_pact=cast_summoners_pact, 
+                summoners_pact_strategy=summoners_pact_strategy, 
                 opponent_has_forces=False, 
                 iterations=iterations
             )
@@ -67,7 +67,7 @@ def run_test_patterns(analyzer: DeckAnalyzer, pattern_list: list, filename: str,
                 initial_hand=initial_hand, 
                 bottom_list=bottom_list, 
                 draw_count=draw_count, 
-                cast_summoners_pact=cast_summoners_pact, 
+                summoners_pact_strategy=summoners_pact_strategy, 
                 iterations=iterations
             )
         
@@ -76,7 +76,7 @@ def run_test_patterns(analyzer: DeckAnalyzer, pattern_list: list, filename: str,
         result['pattern_name'] = name
         result['initial_hand'] = ', '.join(initial_hand) if initial_hand else 'None'
         result['bottom_list'] = ', '.join(bottom_list) if bottom_list else 'None'
-        result['cast_summoners_pact'] = cast_summoners_pact
+        result['summoners_pact_strategy'] = summoners_pact_strategy
         
         results.append(result)
     
@@ -178,7 +178,7 @@ def compare_summoners_pact_strategies(analyzer: DeckAnalyzer, deck_path: str = B
             'deck': deck,
             'initial_hand': initial_hand,
             'bottom_list': bottom_list,
-            'cast_summoners_pact': False,
+            'summoners_pact_strategy': SummonersPactStrategy.NEVER_CAST,
             'draw_count': draw_count
         })
         
@@ -188,7 +188,7 @@ def compare_summoners_pact_strategies(analyzer: DeckAnalyzer, deck_path: str = B
             'deck': deck,
             'initial_hand': initial_hand,
             'bottom_list': bottom_list,
-            'cast_summoners_pact': True,
+            'summoners_pact_strategy': SummonersPactStrategy.ALWAYS_CAST,
             'draw_count': draw_count
         })
     
@@ -238,6 +238,9 @@ def compare_summoners_pact_strategies(analyzer: DeckAnalyzer, deck_path: str = B
             'win_rate_diff': win_rate_diff,
             'better_strategy': 'Cast Summoner\'s Pact' if win_rate_with_cast > win_rate_without_cast else 'Do not cast Summoner\'s Pact'
         })
+    
+    # win_rate_diffでソート（降順）
+    all_results.sort(key=lambda x: x['win_rate_diff'], reverse=True)
     
     # Summoner's Pactをキャストする方が良いケースとキャストしない方が良いケースを表示
     print("\n=== Summoner's Pactをキャストする方が良いケース ===")
@@ -641,7 +644,7 @@ def compare_keep_cards_for_hand(analyzer: DeckAnalyzer, initial_hand: list[str],
             initial_hand=initial_hand, 
             bottom_list=bottom_list, 
             draw_count=draw_count, 
-            cast_summoners_pact=True, 
+            summoners_pact_strategy=SummonersPactStrategy.ALWAYS_CAST, 
             iterations=iterations
         )
         
@@ -655,7 +658,14 @@ def compare_keep_cards_for_hand(analyzer: DeckAnalyzer, initial_hand: list[str],
     # すべてのカードをデッキボトムに送る戦略も追加
     bottom_list = remaining_cards.copy()
     print(f"Testing strategy: Keep None, Bottom: {', '.join(bottom_list)}")
-    stats = analyzer.run_multiple_simulations_with_initial_hand(deck, initial_hand, bottom_list, draw_count, iterations)
+    stats = analyzer.run_multiple_simulations_with_initial_hand(
+        deck=deck, 
+        initial_hand=initial_hand, 
+        bottom_list=bottom_list, 
+        draw_count=draw_count, 
+        summoners_pact_strategy=SummonersPactStrategy.ALWAYS_CAST, 
+        iterations=iterations
+    )
     stats['kept_card'] = 'None'
     stats['bottom_cards'] = ', '.join(bottom_list)
     stats['initial_hand'] = ', '.join(initial_hand)

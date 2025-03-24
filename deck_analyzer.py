@@ -104,7 +104,7 @@ class DeckAnalyzer:
         
         return stats
     
-    def run_multiple_simulations_with_initial_hand(self, deck: list[str], initial_hand: list[str], bottom_list: list[str] = [], draw_count: int = 19, cast_summoners_pact: bool = True, iterations: int = 10000) -> dict:
+    def run_multiple_simulations_with_initial_hand(self, deck: list[str], initial_hand: list[str], bottom_list: list[str] = [], draw_count: int = 19, summoners_pact_strategy = SummonersPactStrategy.AUTO, iterations: int = 10000) -> dict:
         """
         初期手札が指定されている場合のシミュレーションを実行する関数
         
@@ -142,7 +142,7 @@ class DeckAnalyzer:
                 initial_hand=initial_hand, 
                 bottom_list=bottom_list, 
                 draw_count=draw_count, 
-                cast_summoners_pact=cast_summoners_pact
+                summoners_pact_strategy=summoners_pact_strategy
             )
             mulligan_count = self.game.mulligan_count
             
@@ -219,7 +219,7 @@ class DeckAnalyzer:
         
         return stats
     
-    def run_multiple_simulations_without_initial_hand(self, deck: list[str], draw_count: int = 19, mulligan_until_necro: bool = True, cast_summoners_pact: bool = True, opponent_has_forces: bool = False, iterations: int = 10000) -> dict:
+    def run_multiple_simulations_without_initial_hand(self, deck: list[str], draw_count: int = 19, mulligan_until_necro: bool = True, summoners_pact_strategy = SummonersPactStrategy.AUTO, opponent_has_forces: bool = False, iterations: int = 10000) -> dict:
         """
         初期手札が指定されていない場合のシミュレーションを実行する関数
         
@@ -260,7 +260,7 @@ class DeckAnalyzer:
                 deck=deck, 
                 draw_count=draw_count, 
                 mulligan_until_necro=mulligan_until_necro, 
-                cast_summoners_pact=cast_summoners_pact, 
+                summoners_pact_strategy=summoners_pact_strategy, 
                 opponent_has_forces=opponent_has_forces
             )
             mulligan_count = self.game.mulligan_count
@@ -401,7 +401,7 @@ class DeckAnalyzer:
                 initial_hand=initial_hand, 
                 bottom_list=[], 
                 draw_count=draw_count, 
-                cast_summoners_pact=True, 
+                summoners_pact_strategy=SummonersPactStrategy.AUTO, 
                 iterations=iterations
             )
             results.append(stats)
@@ -420,7 +420,7 @@ class DeckAnalyzer:
                 deck=deck, 
                 draw_count=draw_count, 
                 mulligan_until_necro=True, 
-                cast_summoners_pact=True, 
+                summoners_pact_strategy=SummonersPactStrategy.AUTO, 
                 opponent_has_forces=opponent_has_forces, 
                 iterations=iterations
             )
@@ -451,7 +451,7 @@ class DeckAnalyzer:
                 initial_hand=initial_hand, 
                 bottom_list=[], 
                 draw_count=draw_count, 
-                cast_summoners_pact=True, 
+                summoners_pact_strategy=SummonersPactStrategy.AUTO, 
                 iterations=iterations
             )
             

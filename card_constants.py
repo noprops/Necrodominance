@@ -17,7 +17,7 @@ NECRODOMINANCE = "Necrodominance"
 BESEECH_MIRROR = "Beseech the Mirror"
 TENDRILS_OF_AGONY = "Tendrils of Agony"
 PACT_OF_NEGATION = "Pact of Negation"
-DURESS = "DURESS"
+DURESS = "Duress"
 CHANCELLOR_OF_ANNEX = "Chancellor of the Annex"
 
 # Loss Reason

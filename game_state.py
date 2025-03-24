@@ -1,11 +1,17 @@
 import random
 import csv
 import os
+from enum import Enum, auto
 from deck_utils import create_deck
 from mana_pool import ManaPool
 from mana_sources import ManaSources
 from mana_generation_state import ManaGenerationState
 from card_constants import *
+
+class SummonersPactStrategy(Enum):
+    ALWAYS_CAST = auto()  # 常にキャスト
+    NEVER_CAST = auto()   # 常にキャストしない
+    AUTO = auto()         # 自動的に判断
 
 class GameState:
     def __init__(self):
@@ -804,6 +810,16 @@ class GameState:
         self.deck.extend(cards_to_return)
     
     # main phaseにネクロが解決した後、手札の呪文を唱える
+    def _should_cast_summoners_pact(self) -> bool:
+        """
+        Summoner's Pactをキャストすべきかどうかを自動的に判断するメソッド
+        
+        Returns:
+            bool: キャストすべきならTrue、そうでなければFalse
+        """
+        # このメソッドの実装は後で行う
+        return False
+    
     def cast_spells_after_necro_resolved(self, cast_summoners_pact: bool):
         # 手札のBorne Upon a Windを唱えられるなら唱える
         if BORNE_UPON_WIND in self.hand and self.try_generate_mana('1U', [BORNE_UPON_WIND]):
@@ -1108,7 +1124,7 @@ class GameState:
         return True
 
     def run_with_initial_hand(self, deck: list[str], initial_hand: list[str], bottom_list: list[str],
-                              draw_count: int = 19, cast_summoners_pact: bool = True) -> bool:
+                              draw_count: int = 19, summoners_pact_strategy: SummonersPactStrategy = SummonersPactStrategy.AUTO) -> bool:
         """
         初期手札が指定されている場合のゲーム実行関数
         
@@ -1158,6 +1174,15 @@ class GameState:
         if not self.main_phase(False):
             return False
         
+        # summoners_pact_strategyに基づいてcast_summoners_pactを決定
+        cast_summoners_pact = False
+        if summoners_pact_strategy == SummonersPactStrategy.ALWAYS_CAST:
+            cast_summoners_pact = True
+        elif summoners_pact_strategy == SummonersPactStrategy.NEVER_CAST:
+            cast_summoners_pact = False
+        elif summoners_pact_strategy == SummonersPactStrategy.AUTO:
+            cast_summoners_pact = self._should_cast_summoners_pact()
+        
         self.cast_spells_after_necro_resolved(cast_summoners_pact)
 
         #print(f"after main phase self.hand = {self.hand}")
@@ -1177,7 +1202,7 @@ class GameState:
             self.debug("You Lose.")
             return False
     
-    def run_without_initial_hand(self, deck: list[str], draw_count: int, mulligan_until_necro: bool, cast_summoners_pact: bool = True, opponent_has_forces: bool = False) -> bool:
+    def run_without_initial_hand(self, deck: list[str], draw_count: int, mulligan_until_necro: bool, summoners_pact_strategy: SummonersPactStrategy = SummonersPactStrategy.AUTO, opponent_has_forces: bool = False) -> bool:
         """
         初期手札が指定されていない場合のゲーム実行関数（マリガンを行う）
         
@@ -1210,6 +1235,15 @@ class GameState:
             opponent_force_count = self.get_opponent_force_count() if opponent_has_forces else 0
             if self.main_phase(opponent_has_forces, opponent_force_count):
                 # Necroキャストに成功した場合
+                # summoners_pact_strategyに基づいてcast_summoners_pactを決定
+                cast_summoners_pact = False
+                if summoners_pact_strategy == SummonersPactStrategy.ALWAYS_CAST:
+                    cast_summoners_pact = True
+                elif summoners_pact_strategy == SummonersPactStrategy.NEVER_CAST:
+                    cast_summoners_pact = False
+                elif summoners_pact_strategy == SummonersPactStrategy.AUTO:
+                    cast_summoners_pact = self._should_cast_summoners_pact()
+                
                 self.cast_spells_after_necro_resolved(cast_summoners_pact)
                 # ループを抜ける
                 break
@@ -1241,13 +1275,13 @@ if __name__ == "__main__":
             initial_hand=initial_hand, 
             bottom_list=[], 
             draw_count=19, 
-            cast_summoners_pact=False
+            summoners_pact_strategy=SummonersPactStrategy.NEVER_CAST
         )
     else:
         game.run_without_initial_hand(
             deck=deck, 
             draw_count=19, 
             mulligan_until_necro=True, 
-            cast_summoners_pact=True, 
+            summoners_pact_strategy=SummonersPactStrategy.ALWAYS_CAST, 
             opponent_has_forces=False
         )

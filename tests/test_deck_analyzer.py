@@ -37,7 +37,7 @@ class TestDeckAnalyzer(unittest.TestCase):
         deck_file = os.path.join(root_dir, 'decks', 'gemstone4_paradise0_cantor0_chrome4_wind4_valakut3.txt')
         return create_deck(deck_file)
     
-    def compare_initial_hands_with_default_deck(self, initial_hand_a, initial_hand_b, bottom_list_a=[], bottom_list_b=[], iterations=ITERATIONS, cast_summoners_pact=False):
+    def compare_initial_hands_with_default_deck(self, initial_hand_a, initial_hand_b, bottom_list_a=[], bottom_list_b=[], iterations=ITERATIONS, summoners_pact_strategy=SummonersPactStrategy.NEVER_CAST):
         """
         デフォルトのデッキを使用して2つの初期手札の勝率を比較する関数
         
@@ -56,9 +56,9 @@ class TestDeckAnalyzer(unittest.TestCase):
         deck = self.get_default_deck()
         
         # compare_initial_hands関数を呼び出す
-        return self.compare_initial_hands(deck, deck, initial_hand_a, initial_hand_b, bottom_list_a, bottom_list_b, iterations, cast_summoners_pact)
+        return self.compare_initial_hands(deck, deck, initial_hand_a, initial_hand_b, bottom_list_a, bottom_list_b, iterations, summoners_pact_strategy)
     
-    def compare_initial_hands(self, deck_a, deck_b, initial_hand_a, initial_hand_b, bottom_list_a=[], bottom_list_b=[], iterations=ITERATIONS, cast_summoners_pact=False):
+    def compare_initial_hands(self, deck_a, deck_b, initial_hand_a, initial_hand_b, bottom_list_a=[], bottom_list_b=[], iterations=ITERATIONS, summoners_pact_strategy=SummonersPactStrategy.NEVER_CAST):
         """
         2つの初期手札の勝率を比較する汎用関数
         
@@ -83,7 +83,7 @@ class TestDeckAnalyzer(unittest.TestCase):
             bottom_list=bottom_list_a, 
             draw_count=19, 
             iterations=iterations, 
-            cast_summoners_pact=cast_summoners_pact
+            summoners_pact_strategy=summoners_pact_strategy
         )
         win_rate_a = stats_a['win_rate']
         
@@ -94,7 +94,7 @@ class TestDeckAnalyzer(unittest.TestCase):
             bottom_list=bottom_list_b, 
             draw_count=19, 
             iterations=iterations, 
-            cast_summoners_pact=cast_summoners_pact
+            summoners_pact_strategy=summoners_pact_strategy
         )
         win_rate_b = stats_b['win_rate']
         
@@ -103,13 +103,13 @@ class TestDeckAnalyzer(unittest.TestCase):
             {
                 'initial_hand': ', '.join(initial_hand_a),
                 'bottom_list': ', '.join(bottom_list_a),
-                'cast_summoners_pact': cast_summoners_pact,
+                'summoners_pact_strategy': summoners_pact_strategy,
                 **stats_a
             },
             {
                 'initial_hand': ', '.join(initial_hand_b),
                 'bottom_list': ', '.join(bottom_list_b),
-                'cast_summoners_pact': cast_summoners_pact,
+                'summoners_pact_strategy': summoners_pact_strategy,
                 **stats_b
             }
         ]
@@ -141,7 +141,7 @@ class TestDeckAnalyzer(unittest.TestCase):
         initial_hand_b = [GEMSTONE_MINE, DARK_RITUAL, NECRODOMINANCE, ELVISH_SPIRIT_GUIDE]
         
         # 勝率を比較（Summoner's Pactを唱えない）
-        win_rate_a, win_rate_b = self.compare_initial_hands_with_default_deck(initial_hand_a, initial_hand_b, cast_summoners_pact=False)
+        win_rate_a, win_rate_b = self.compare_initial_hands_with_default_deck(initial_hand_a, initial_hand_b, summoners_pact_strategy=SummonersPactStrategy.NEVER_CAST)
         
         # 勝率の差を表示
         diff = win_rate_a - win_rate_b
@@ -173,7 +173,7 @@ class TestDeckAnalyzer(unittest.TestCase):
         initial_hand_b = [GEMSTONE_MINE, DARK_RITUAL, NECRODOMINANCE, ELVISH_SPIRIT_GUIDE]
         
         # 勝率を比較（Summoner's Pactを唱える）
-        win_rate_a, win_rate_b = self.compare_initial_hands_with_default_deck(initial_hand_a, initial_hand_b, cast_summoners_pact=True)
+        win_rate_a, win_rate_b = self.compare_initial_hands_with_default_deck(initial_hand_a, initial_hand_b, summoners_pact_strategy=SummonersPactStrategy.ALWAYS_CAST)
         
         # 勝率の差を表示
         diff = win_rate_a - win_rate_b
@@ -210,7 +210,7 @@ class TestDeckAnalyzer(unittest.TestCase):
         bottom_list_b = [GEMSTONE_MINE, GEMSTONE_MINE, BORNE_UPON_WIND]
         
         # 勝率を比較（Summoner's Pactを唱えない）
-        win_rate_a, win_rate_b = self.compare_initial_hands_with_default_deck(initial_hand_a, initial_hand_b, bottom_list_a, bottom_list_b, cast_summoners_pact=False)
+        win_rate_a, win_rate_b = self.compare_initial_hands_with_default_deck(initial_hand_a, initial_hand_b, bottom_list_a, bottom_list_b, summoners_pact_strategy=SummonersPactStrategy.NEVER_CAST)
         
         # 勝率の差を表示
         diff = win_rate_a - win_rate_b
@@ -249,7 +249,7 @@ class TestDeckAnalyzer(unittest.TestCase):
         bottom_list_b = [GEMSTONE_MINE, GEMSTONE_MINE, BORNE_UPON_WIND]
         
         # 勝率を比較（Summoner's Pactを唱える）
-        win_rate_a, win_rate_b = self.compare_initial_hands_with_default_deck(initial_hand_a, initial_hand_b, bottom_list_a, bottom_list_b, cast_summoners_pact=True)
+        win_rate_a, win_rate_b = self.compare_initial_hands_with_default_deck(initial_hand_a, initial_hand_b, bottom_list_a, bottom_list_b, summoners_pact_strategy=SummonersPactStrategy.ALWAYS_CAST)
         
         # 勝率の差を表示
         diff = win_rate_a - win_rate_b
@@ -285,7 +285,7 @@ class TestDeckAnalyzer(unittest.TestCase):
         bottom_list_b = [GEMSTONE_MINE, MANAMORPHOSE, BORNE_UPON_WIND]
         
         # 勝率を比較（Summoner's Pactを唱えない）
-        win_rate_a, win_rate_b = self.compare_initial_hands_with_default_deck(initial_hand_a, initial_hand_b, bottom_list_a, bottom_list_b, cast_summoners_pact=False)
+        win_rate_a, win_rate_b = self.compare_initial_hands_with_default_deck(initial_hand_a, initial_hand_b, bottom_list_a, bottom_list_b, summoners_pact_strategy=SummonersPactStrategy.NEVER_CAST)
         
         # 勝率の差を表示
         diff = win_rate_a - win_rate_b
@@ -325,7 +325,7 @@ class TestDeckAnalyzer(unittest.TestCase):
         bottom_list_b = [GEMSTONE_MINE, MANAMORPHOSE, BORNE_UPON_WIND]
         
         # 勝率を比較（Summoner's Pactを唱える）
-        win_rate_a, win_rate_b = self.compare_initial_hands_with_default_deck(initial_hand_a, initial_hand_b, bottom_list_a, bottom_list_b, cast_summoners_pact=True)
+        win_rate_a, win_rate_b = self.compare_initial_hands_with_default_deck(initial_hand_a, initial_hand_b, bottom_list_a, bottom_list_b, summoners_pact_strategy=SummonersPactStrategy.ALWAYS_CAST)
         
         # 勝率の差を表示
         diff = win_rate_a - win_rate_b
@@ -365,7 +365,7 @@ class TestDeckAnalyzer(unittest.TestCase):
         bottom_list_b = [GEMSTONE_MINE, GEMSTONE_MINE, GEMSTONE_MINE]
         
         # 勝率を比較（Summoner's Pactを唱えない）
-        win_rate_a, win_rate_b = self.compare_initial_hands_with_default_deck(initial_hand_a, initial_hand_b, bottom_list_a, bottom_list_b, cast_summoners_pact=False)
+        win_rate_a, win_rate_b = self.compare_initial_hands_with_default_deck(initial_hand_a, initial_hand_b, bottom_list_a, bottom_list_b, summoners_pact_strategy=SummonersPactStrategy.NEVER_CAST)
         
         # 勝率の差を表示
         diff = win_rate_a - win_rate_b
@@ -405,7 +405,7 @@ class TestDeckAnalyzer(unittest.TestCase):
         bottom_list_b = [GEMSTONE_MINE, GEMSTONE_MINE, GEMSTONE_MINE]
         
         # 勝率を比較（Summoner's Pactを唱える）
-        win_rate_a, win_rate_b = self.compare_initial_hands_with_default_deck(initial_hand_a, initial_hand_b, bottom_list_a, bottom_list_b, cast_summoners_pact=True)
+        win_rate_a, win_rate_b = self.compare_initial_hands_with_default_deck(initial_hand_a, initial_hand_b, bottom_list_a, bottom_list_b, summoners_pact_strategy=SummonersPactStrategy.ALWAYS_CAST)
         
         # 勝率の差を表示
         diff = win_rate_a - win_rate_b
@@ -442,7 +442,7 @@ class TestDeckAnalyzer(unittest.TestCase):
         initial_hand_b = [GEMSTONE_MINE, DARK_RITUAL, NECRODOMINANCE, CABAL_RITUAL]
         
         # 勝率を比較（Summoner's Pactを唱えない）
-        win_rate_a, win_rate_b = self.compare_initial_hands_with_default_deck(initial_hand_a, initial_hand_b, cast_summoners_pact=False)
+        win_rate_a, win_rate_b = self.compare_initial_hands_with_default_deck(initial_hand_a, initial_hand_b, summoners_pact_strategy=SummonersPactStrategy.NEVER_CAST)
         
         # 勝率の差を表示
         diff = win_rate_a - win_rate_b
@@ -495,7 +495,7 @@ class TestDeckAnalyzer(unittest.TestCase):
             initial_hand=initial_hand, 
             bottom_list=[], 
             draw_count=19, 
-            cast_summoners_pact=False, 
+            summoners_pact_strategy=SummonersPactStrategy.NEVER_CAST, 
             iterations=ITERATIONS
         )
         win_rate_a = stats_a['win_rate']
@@ -505,7 +505,7 @@ class TestDeckAnalyzer(unittest.TestCase):
             initial_hand=initial_hand, 
             bottom_list=[], 
             draw_count=19, 
-            cast_summoners_pact=False, 
+            summoners_pact_strategy=SummonersPactStrategy.NEVER_CAST, 
             iterations=ITERATIONS
         )
         win_rate_b = stats_b['win_rate']
@@ -579,7 +579,7 @@ class TestDeckAnalyzer(unittest.TestCase):
             bottom_list=[], 
             draw_count=19, 
             iterations=ITERATIONS, 
-            cast_summoners_pact=False
+            summoners_pact_strategy=SummonersPactStrategy.NEVER_CAST
         )
         win_rate_a = stats_a['win_rate']
         
@@ -588,7 +588,7 @@ class TestDeckAnalyzer(unittest.TestCase):
             initial_hand=initial_hand, 
             bottom_list=[], 
             draw_count=19, 
-            cast_summoners_pact=False, 
+            summoners_pact_strategy=SummonersPactStrategy.NEVER_CAST, 
             iterations=ITERATIONS
         )
         win_rate_b = stats_b['win_rate']
@@ -645,7 +645,7 @@ class TestDeckAnalyzer(unittest.TestCase):
         initial_hand_b = [GEMSTONE_MINE, DARK_RITUAL, NECRODOMINANCE, CABAL_RITUAL]
         
         # 勝率を比較
-        win_rate_a, win_rate_b = self.compare_initial_hands_with_default_deck(initial_hand_a, initial_hand_b)
+        win_rate_a, win_rate_b = self.compare_initial_hands_with_default_deck(initial_hand_a, initial_hand_b, summoners_pact_strategy=SummonersPactStrategy.NEVER_CAST)
         
         # 勝率の差を表示
         diff = win_rate_a - win_rate_b
