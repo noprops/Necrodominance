@@ -39,6 +39,8 @@ class GameState:
         self.mulligan_count = 0 # マリガンした回数
         self.return_count = 0 # マリガンで戻すカードの枚数
         self.storm_count = 0
+
+        self.should_shuffle = False
         self.did_shuffle = False
         self.can_cast_sorcery = False
         self.did_cast_necro = False
@@ -79,6 +81,8 @@ class GameState:
         self.mulligan_count = other.mulligan_count
         self.return_count = other.return_count
         self.storm_count = other.storm_count
+
+        self.should_shuffle = other.should_shuffle
         self.did_shuffle = other.did_shuffle
         self.can_cast_sorcery = other.can_cast_sorcery
         self.did_cast_necro = other.did_cast_necro
@@ -836,17 +840,14 @@ class GameState:
             BESEECH_MIRROR
         ]
         
+        if TENDRILS_OF_AGONY in self.hand or BESEECH_MIRROR in self.hand:
+            needed_cards.remove(TENDRILS_OF_AGONY)
+            needed_cards.remove(BESEECH_MIRROR)
+        
         # 必要なカードのリストから、すでにself.handにあるカードを取り除く
         for card in self.hand:
             if card in needed_cards:
                 needed_cards.remove(card)
-            
-            # self.handにTendrilsまたはBeseechがある場合は、必要なカードのリストからTendrilsとBeseechの両方を取り除く
-            if card == TENDRILS_OF_AGONY or card == BESEECH_MIRROR:
-                if TENDRILS_OF_AGONY in needed_cards:
-                    needed_cards.remove(TENDRILS_OF_AGONY)
-                if BESEECH_MIRROR in needed_cards:
-                    needed_cards.remove(BESEECH_MIRROR)
         
         # self.bottom_listに必要なカードのリストに含まれるカードが含まれているかを調べる
         for card in self.bottom_list:
@@ -858,7 +859,7 @@ class GameState:
         # できるだけシャッフルしないようにする、つまりFalseを返す
         return False
     
-    def cast_spells_after_necro_resolved(self, cast_summoners_pact: bool):
+    def cast_spells_after_necro_resolved(self, summoners_pact_strategy: SummonersPactStrategy):
         # 手札のBorne Upon a Windを唱えられるなら唱える
         if BORNE_UPON_WIND in self.hand and self.try_generate_mana('1U', [BORNE_UPON_WIND]):
             self.cast_borne_upon_a_wind()
@@ -875,8 +876,16 @@ class GameState:
             elif self.hand.count(BORNE_UPON_WIND) >= 2:
                 self.cast_chrome_mox(BORNE_UPON_WIND)
         
+        self.should_shuffle = False
+        if summoners_pact_strategy == SummonersPactStrategy.ALWAYS_CAST:
+            self.should_shuffle = True
+        elif summoners_pact_strategy == SummonersPactStrategy.NEVER_CAST:
+            self.should_shuffle = False
+        elif summoners_pact_strategy == SummonersPactStrategy.AUTO:
+            self.should_shuffle = self._should_cast_summoners_pact()
+        
         # 手札のSummoner's Pactを唱える
-        if cast_summoners_pact:
+        if self.should_shuffle:
             while SUMMONERS_PACT in self.hand:
                 if ELVISH_SPIRIT_GUIDE in self.deck:
                     self.cast_summoners_pact(ELVISH_SPIRIT_GUIDE)
@@ -885,7 +894,7 @@ class GameState:
                 else:
                     break
     
-    def end_step(self, draw_count: int) -> bool:
+    def end_step(self, draw_count: int, summoners_pact_strategy: SummonersPactStrategy) -> bool:
         if not self.did_cast_wind:
             self.can_cast_sorcery = False
         
@@ -902,6 +911,14 @@ class GameState:
         # Basic validation
         if not self.validate_hand_in_end_step():
             return False
+        
+        self.should_shuffle = False
+        if summoners_pact_strategy == SummonersPactStrategy.ALWAYS_CAST:
+            self.should_shuffle = True
+        elif summoners_pact_strategy == SummonersPactStrategy.NEVER_CAST:
+            self.should_shuffle = False
+        elif summoners_pact_strategy == SummonersPactStrategy.AUTO:
+            self.should_shuffle = self._should_cast_summoners_pact()
         
         return self.try_cast_tendril()
     
@@ -1024,7 +1041,7 @@ class GameState:
                 self.cast_pact_of_negation()
     
     def try_cast_tendril(self) -> bool:
-        if SUMMONERS_PACT in self.hand:
+        if (self.should_shuffle or not self.bottom_list) and SUMMONERS_PACT in self.hand:
             if ELVISH_SPIRIT_GUIDE in self.deck:
                 self.cast_summoners_pact(ELVISH_SPIRIT_GUIDE)
                 return self.try_cast_tendril()
@@ -1213,16 +1230,7 @@ class GameState:
         if not self.main_phase(False):
             return False
         
-        # summoners_pact_strategyに基づいてcast_summoners_pactを決定
-        cast_summoners_pact = False
-        if summoners_pact_strategy == SummonersPactStrategy.ALWAYS_CAST:
-            cast_summoners_pact = True
-        elif summoners_pact_strategy == SummonersPactStrategy.NEVER_CAST:
-            cast_summoners_pact = False
-        elif summoners_pact_strategy == SummonersPactStrategy.AUTO:
-            cast_summoners_pact = self._should_cast_summoners_pact()
-        
-        self.cast_spells_after_necro_resolved(cast_summoners_pact)
+        self.cast_spells_after_necro_resolved(summoners_pact_strategy)
 
         #print(f"after main phase self.hand = {self.hand}")
         #print(f"after main phase self.battlefield = {self.battlefield}")
@@ -1234,7 +1242,7 @@ class GameState:
         #print(f"Cabal Ritual count in hand {self.hand.count(CABAL_RITUAL)}")
         #print(f"Cabal Ritual count in deck {self.deck.count(CABAL_RITUAL)}")
         
-        if self.end_step(draw_count):
+        if self.end_step(draw_count, summoners_pact_strategy):
             self.debug("You Win.")
             return True
         else:
@@ -1274,16 +1282,7 @@ class GameState:
             opponent_force_count = self.get_opponent_force_count() if opponent_has_forces else 0
             if self.main_phase(opponent_has_forces, opponent_force_count):
                 # Necroキャストに成功した場合
-                # summoners_pact_strategyに基づいてcast_summoners_pactを決定
-                cast_summoners_pact = False
-                if summoners_pact_strategy == SummonersPactStrategy.ALWAYS_CAST:
-                    cast_summoners_pact = True
-                elif summoners_pact_strategy == SummonersPactStrategy.NEVER_CAST:
-                    cast_summoners_pact = False
-                elif summoners_pact_strategy == SummonersPactStrategy.AUTO:
-                    cast_summoners_pact = self._should_cast_summoners_pact()
-                
-                self.cast_spells_after_necro_resolved(cast_summoners_pact)
+                self.cast_spells_after_necro_resolved(summoners_pact_strategy)
                 # ループを抜ける
                 break
             elif self.loss_reason == FAILED_NECRO_COUNTERED:
@@ -1295,7 +1294,7 @@ class GameState:
             self.debug(f"Failed to cast Necrodominance. mulligan count = {self.mulligan_count}")
             return False
         
-        if self.end_step(draw_count):
+        if self.end_step(draw_count, summoners_pact_strategy):
             self.debug("You Win.")
             return True
         else:
