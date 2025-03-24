@@ -6,7 +6,7 @@ import datetime
 
 # 定数
 BEST_DECK_PATH = 'decks/gemstone4_paradise0_cantor0_chrome4_wind4_valakut3.txt'
-DEFAULT_ITERATIONS = 100000
+DEFAULT_ITERATIONS = 1000000
 
 def run_test_patterns(analyzer: DeckAnalyzer, pattern_list: list, filename: str, iterations: int = DEFAULT_ITERATIONS, sort_by_win_rate: bool = False):
     """
@@ -247,6 +247,9 @@ def compare_summoners_pact_strategies(analyzer: DeckAnalyzer, deck_path: str = B
     print("\n=== Summoner's Pactをキャストしない方が良いケース ===")
     for case in better_not_cast:
         print(f"- {case}")
+    
+    # 結果をCSVに保存
+    save_results_to_csv('compare_summoners_pact_strategies_summary', all_results, ['case', 'initial_hand', 'bottom_list', 'win_rate_without_cast', 'win_rate_with_cast', 'win_rate_diff', 'better_strategy'])
     
     return all_results
 
