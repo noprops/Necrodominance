@@ -256,6 +256,100 @@ def compare_summoners_pact_strategies(analyzer: DeckAnalyzer, deck_path: str = B
     
     return all_results
 
+def run_with_auto_summoners_pact_strategy(analyzer: DeckAnalyzer, deck_path: str = BEST_DECK_PATH, draw_count: int = 19, iterations: int = DEFAULT_ITERATIONS):
+    """
+    複数の初期手札と底札の組み合わせについて、Summoner's Pactの戦略をAUTOに設定してシミュレーションを実行する関数
+    
+    compare_summoners_pact_strategiesと同じテストケースを使用しますが、すべてのケースでsummoners_pact_strategyをAUTOに設定します。
+    
+    Args:
+        analyzer: DeckAnalyzerインスタンス
+        deck_path: デッキファイルのパス
+        draw_count: ドロー数
+        iterations: シミュレーション回数
+        
+    Returns:
+        各組み合わせの結果のリスト
+    """
+    # デッキを読み込む
+    deck = create_deck(deck_path)
+    
+    # 初期手札と底札の組み合わせを定義
+    test_cases = [
+        {
+            'name': 'basic_hand',
+            'initial_hand': [GEMSTONE_MINE, DARK_RITUAL, NECRODOMINANCE, SUMMONERS_PACT],
+            'bottom_list': []
+        },
+        {
+            'name': 'bottom_necessary_cards',
+            'initial_hand': [GEMSTONE_MINE, DARK_RITUAL, NECRODOMINANCE, SUMMONERS_PACT, MANAMORPHOSE, BORNE_UPON_WIND, VALAKUT_AWAKENING],
+            'bottom_list': [MANAMORPHOSE, BORNE_UPON_WIND, VALAKUT_AWAKENING]
+        }
+    ]
+    
+    # 様々なカードをXとして追加
+    cards_to_test = [
+        CHROME_MOX,
+        LOTUS_PETAL,
+        SUMMONERS_PACT,
+        ELVISH_SPIRIT_GUIDE,
+        SIMIAN_SPIRIT_GUIDE,
+        WILD_CANTOR,
+        MANAMORPHOSE,
+        VALAKUT_AWAKENING,
+        BORNE_UPON_WIND,
+        DARK_RITUAL,
+        CABAL_RITUAL,
+        NECRODOMINANCE,
+        BESEECH_MIRROR,
+        TENDRILS_OF_AGONY,
+        PACT_OF_NEGATION,
+        DURESS,
+        CHANCELLOR_OF_ANNEX
+    ]
+    
+    for card in cards_to_test:
+        card_name = card.split(' ')[0].lower()
+        test_cases.append({
+            'name': f'bottom_{card_name}',
+            'initial_hand': [GEMSTONE_MINE, DARK_RITUAL, NECRODOMINANCE, SUMMONERS_PACT, GEMSTONE_MINE, GEMSTONE_MINE, card],
+            'bottom_list': [card]  # Xの1枚のみをボトムに戻す
+        })
+    
+    # テストケースごとにパターンを作成し、すべてAUTOに設定
+    all_patterns = []
+    
+    for test_case in test_cases:
+        case_name = test_case['name']
+        initial_hand = test_case['initial_hand']
+        bottom_list = test_case['bottom_list']
+        
+        print(f"\nTesting case {case_name}:")
+        print(f"Initial hand: {', '.join(initial_hand)}")
+        print(f"Bottom list: {', '.join(bottom_list)}")
+        
+        # このテストケースのパターンを追加
+        all_patterns.append({
+            'name': f'Case {case_name} - AUTO Summoner\'s Pact',
+            'deck': deck,
+            'initial_hand': initial_hand,
+            'bottom_list': bottom_list,
+            'summoners_pact_strategy': SummonersPactStrategy.AUTO,
+            'draw_count': draw_count
+        })
+    
+    # すべてのパターンを一度に実行
+    filename = "auto_summoners_pact_strategy_all_cases"
+    results = run_test_patterns(analyzer, all_patterns, filename, iterations)
+    
+    # 結果を表示
+    print("\nAUTO Summoner's Pact Strategy Results:")
+    for result in results:
+        print(f"Pattern: {result['pattern_name']}, Win Rate: {result['win_rate']:.2f}%")
+    
+    return results
+
 ## old methods
 def create_custom_deck(card_counts: dict, base_deck_path: str = 'decks/gemstone4_paradise0_cantor1_chrome4_wind3_valakut3.txt') -> list:
     """
