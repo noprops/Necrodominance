@@ -30,6 +30,7 @@ class GameState:
 
         self.deck = []
         self.hand = []
+        self.bottom_list = []
         self.battlefield = []
         self.graveyard = []
         self.any_mana_sources = []
@@ -69,6 +70,7 @@ class GameState:
 
         self.deck = other.deck.copy()
         self.hand = other.hand.copy()
+        self.bottom_list = other.bottom_list.copy()
         self.battlefield = other.battlefield.copy()
         self.graveyard = other.graveyard.copy()
         self.any_mana_sources = other.any_mana_sources.copy()
@@ -94,6 +96,7 @@ class GameState:
     def shuffle_deck(self):
         if self.shuffle_enabled:
             random.shuffle(self.deck)
+            self.bottom_list.clear()
             self.did_shuffle = True
     
     # Any Mana Sourceを追加する
@@ -749,11 +752,11 @@ class GameState:
     
     def return_cards_for_mulligan(self, opponent_has_forces: bool = False, did_imprint_chancellor: bool = False):
         # 1枚だけ残したいカード
-        single_copy_cards = [VALAKUT_AWAKENING, MANAMORPHOSE, BORNE_UPON_WIND, DARK_RITUAL, BESEECH_MIRROR]
+        single_copy_cards = [VALAKUT_AWAKENING, MANAMORPHOSE, BORNE_UPON_WIND, BESEECH_MIRROR]
         # あるだけ残したいカード
         multi_copy_cards = [LOTUS_PETAL, SIMIAN_SPIRIT_GUIDE, ELVISH_SPIRIT_GUIDE, SUMMONERS_PACT]
         # 全体の優先順位
-        priority = [VALAKUT_AWAKENING, MANAMORPHOSE, BORNE_UPON_WIND, LOTUS_PETAL, SIMIAN_SPIRIT_GUIDE, ELVISH_SPIRIT_GUIDE, SUMMONERS_PACT, DARK_RITUAL, BESEECH_MIRROR]
+        priority = [VALAKUT_AWAKENING, MANAMORPHOSE, BORNE_UPON_WIND, LOTUS_PETAL, SIMIAN_SPIRIT_GUIDE, ELVISH_SPIRIT_GUIDE, SUMMONERS_PACT, BESEECH_MIRROR]
         if self.mana_source.U > 0:
             # 青マナソースがある場合はWindを優先する
             priority.remove(BORNE_UPON_WIND)
@@ -808,6 +811,7 @@ class GameState:
         cards_to_return = self.hand.copy()
         self.hand = cards_to_keep
         self.deck.extend(cards_to_return)
+        self.bottom_list = cards_to_return
     
     # main phaseにネクロが解決した後、手札の呪文を唱える
     def _should_cast_summoners_pact(self) -> bool:
@@ -817,7 +821,41 @@ class GameState:
         Returns:
             bool: キャストすべきならTrue、そうでなければFalse
         """
-        # このメソッドの実装は後で行う
+        # self.bottom_listが空ならTrue（シャッフルする）
+        if not self.bottom_list:
+            return True
+        
+        # 必要なカードのリスト
+        needed_cards = [
+            MANAMORPHOSE,
+            VALAKUT_AWAKENING,
+            BORNE_UPON_WIND,
+            SIMIAN_SPIRIT_GUIDE,
+            TENDRILS_OF_AGONY,
+            ELVISH_SPIRIT_GUIDE,
+            BESEECH_MIRROR
+        ]
+        
+        # 必要なカードのリストから、すでにself.handにあるカードを取り除く
+        for card in self.hand:
+            if card in needed_cards:
+                needed_cards.remove(card)
+            
+            # self.handにTendrilsまたはBeseechがある場合は、必要なカードのリストからTendrilsとBeseechの両方を取り除く
+            if card == TENDRILS_OF_AGONY or card == BESEECH_MIRROR:
+                if TENDRILS_OF_AGONY in needed_cards:
+                    needed_cards.remove(TENDRILS_OF_AGONY)
+                if BESEECH_MIRROR in needed_cards:
+                    needed_cards.remove(BESEECH_MIRROR)
+        
+        # self.bottom_listに必要なカードのリストに含まれるカードが含まれているかを調べる
+        for card in self.bottom_list:
+            if card in needed_cards:
+                # 必要なカードがボトムにある場合はシャッフルする
+                return True
+        
+        # 必要なカードが何も含まれていないのならば、ボトムに不要なカードばかりということを意味するので、
+        # できるだけシャッフルしないようにする、つまりFalseを返す
         return False
     
     def cast_spells_after_necro_resolved(self, cast_summoners_pact: bool):
@@ -1161,6 +1199,7 @@ class GameState:
         
         # bottom_listが空でない場合、指定されたカードを手札からデッキボトムに移動
         if bottom_list:
+            self.bottom_list = bottom_list.copy()
             for card in bottom_list:
                 if card in self.hand:
                     self.hand.remove(card)
