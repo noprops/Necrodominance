@@ -272,6 +272,66 @@ class TestGenerateMana(unittest.TestCase):
         self.assertEqual(self.game.mana_pool.B, 3)
         self.assertEqual(self.game.mana_pool.R, 0)
         self.assertEqual(self.game.mana_pool.G, 0)
+    
+    def test_try_generate_mana_GBBB_with_petal2_elvish_cabal(self):
+        self.game.battlefield = []
+        self.game.hand = [LOTUS_PETAL, LOTUS_PETAL, ELVISH_SPIRIT_GUIDE, CABAL_RITUAL]
+        self.game.did_cast_wind = False
+        self.game.can_cast_sorcery = True
+
+        self.assertTrue(self.game.try_generate_mana('GBBB', []))
+
+        self.assertEqual(self.game.mana_pool.W, 0)
+        self.assertEqual(self.game.mana_pool.U, 0)
+        self.assertEqual(self.game.mana_pool.B, 3)
+        self.assertEqual(self.game.mana_pool.R, 0)
+        self.assertEqual(self.game.mana_pool.G, 1)
+    
+    def test_try_generate_mana_UR3_with_petal4_cabal(self):
+        self.game.battlefield = []
+        self.game.hand = [LOTUS_PETAL, LOTUS_PETAL, LOTUS_PETAL, LOTUS_PETAL, CABAL_RITUAL]
+        self.game.did_cast_wind = False
+        self.game.can_cast_sorcery = True
+
+        self.assertTrue(self.game.try_generate_mana('UR3', []))
+
+        self.assertEqual(self.game.mana_pool.W, 0)
+        self.assertEqual(self.game.mana_pool.U, 1)
+        self.assertEqual(self.game.mana_pool.B, 3)
+        self.assertEqual(self.game.mana_pool.R, 1)
+        self.assertEqual(self.game.mana_pool.G, 0)
+    
+    def test_try_generate_mana_BBB_with_land_chrome_cabal(self):
+        self.game.battlefield = []
+        self.game.hand = [VAULT_OF_WHISPERS, CHROME_MOX, PACT_OF_NEGATION, CABAL_RITUAL]
+        self.game.did_cast_wind = False
+        self.game.can_cast_sorcery = True
+        self.game.set_land(VAULT_OF_WHISPERS)
+        self.game.cast_chrome_mox(PACT_OF_NEGATION)
+
+        self.assertTrue(self.game.try_generate_mana('BBB', []))
+
+        self.assertEqual(self.game.mana_pool.W, 0)
+        self.assertEqual(self.game.mana_pool.U, 0)
+        self.assertEqual(self.game.mana_pool.B, 3)
+        self.assertEqual(self.game.mana_pool.R, 0)
+        self.assertEqual(self.game.mana_pool.G, 0)
+    
+    def test_try_generate_mana_BBB_with_land_chrome_cabal2(self):
+        self.game.battlefield = []
+        self.game.hand = [VAULT_OF_WHISPERS, CHROME_MOX, CABAL_RITUAL, CABAL_RITUAL]
+        self.game.did_cast_wind = False
+        self.game.can_cast_sorcery = True
+        self.game.set_land(VAULT_OF_WHISPERS)
+        self.game.cast_chrome_mox(CABAL_RITUAL)
+
+        self.assertTrue(self.game.try_generate_mana('BBB', []))
+
+        self.assertEqual(self.game.mana_pool.W, 0)
+        self.assertEqual(self.game.mana_pool.U, 0)
+        self.assertEqual(self.game.mana_pool.B, 3)
+        self.assertEqual(self.game.mana_pool.R, 0)
+        self.assertEqual(self.game.mana_pool.G, 0)
 
 if __name__ == '__main__':
     unittest.main()

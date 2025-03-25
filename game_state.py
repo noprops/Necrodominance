@@ -233,7 +233,7 @@ class GameState:
         
         tmp_pool = ManaPool()
 
-        for color in ['R', 'G', 'W', 'U']:
+        for color in ['G', 'R', 'W', 'U']:
             required_count = required[color]
             if required_count == 0:
                 continue
@@ -253,13 +253,6 @@ class GameState:
                         self.cast_wild_cantor()
                         cards_to_use.remove(WILD_CANTOR)
                         continue
-                '''
-                error_msg = f"ERROR in generate_mana_pattern: Failed to generate enough {color} mana\n"
-                error_msg += f"required: {required_count}, current: {self.mana_pool.get_colored_mana_count(color)}\n"
-                error_msg += f"mana_pool: {self.mana_pool}, mana_source: {self.mana_source}\n"
-                error_msg += f"cards_to_use: {cards_to_use}, hand: {self.hand}"
-                print(error_msg)
-                raise RuntimeError(error_msg)'''
                 # Failed to generate enough {color} mana
                 return (False, f"Failed to generate enough {color} mana")
             
@@ -300,11 +293,25 @@ class GameState:
                 self.mana_pool.pay_mana('1B')
                 self.cast_cabal_ritual()
                 cards_to_use.remove(CABAL_RITUAL)
-            elif self.mana_source.can_generate_mana('B'):
+                continue
+            elif self.mana_pool.B == 0 and self.mana_source.can_generate_mana('B'):
                 self.mana_source.generate_mana('B')
-            else:
-                # cabal in cards_to_use but failed to cast it
-                return (False, "Failed to cast Cabal Ritual")
+                continue
+            elif self.mana_pool.B > 0:
+                did_generate_mana = False
+                for color in ['G', 'R', 'W', 'U', 'B']:
+                    if self.mana_source.get_colored_source_count(color) > 0:
+                        self.mana_source.generate_mana(color)
+                        did_generate_mana = True
+                        break
+                if did_generate_mana:
+                    continue
+                if self.mana_source.ANY > 0:
+                    self.mana_source.generate_mana('B')
+                    continue
+            
+            # cabal in cards_to_use but failed to cast it
+            return (False, "Failed to cast Cabal Ritual")
         
         requiredB = required['B']
         while self.mana_pool.B < requiredB and self.mana_source.can_generate_mana('B'):
@@ -353,6 +360,10 @@ class GameState:
                 error_msg = f"ERROR: state.can_generate_mana_pattern returned True but self.generate_mana_pattern returned False\n"
                 error_msg += f"required: {required}, generic: {generic}\n"
                 error_msg += f"result: {result}, cards_used_from_hand: {cards_used_from_hand}, cards_imprinted: {cards_imprinted}, cards_searched: {cards_searched}\n"
+                error_msg += f"hand: {self.hand}\n"
+                error_msg += f"battlefield: {self.battlefield}\n"
+                error_msg += f"mana_pool: {self.mana_pool}\n"
+                error_msg += f"mana_source: {self.mana_source}\n"
                 error_msg += f"Error message: {error_message}"
                 print(error_msg)
                 raise RuntimeError(error_msg)

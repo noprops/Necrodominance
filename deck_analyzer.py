@@ -375,6 +375,16 @@ class DeckAnalyzer:
         all_failed_necro_0 = all(result.get(FALIED_NECRO, 0) == 0 for result in results)
         all_failed_necro_countered_0 = all(result.get(FAILED_NECRO_COUNTERED, 0) == 0 for result in results)
         
+        # initial_handとbottom_listがすべてNoneまたは空かどうかを確認
+        all_initial_hand_empty = all(
+            result.get('initial_hand') is None or result.get('initial_hand') == '' or result.get('initial_hand') == 'None'
+            for result in results
+        )
+        all_bottom_list_empty = all(
+            result.get('bottom_list') is None or result.get('bottom_list') == '' or result.get('bottom_list') == 'None'
+            for result in results
+        )
+        
         # 条件に基づいて不要な項目を削除
         for result in results:
             if all_cast_necro_rate_100 and 'cast_necro_rate' in result:
@@ -391,6 +401,13 @@ class DeckAnalyzer:
             
             if all_failed_necro_countered_0 and FAILED_NECRO_COUNTERED in result:
                 del result[FAILED_NECRO_COUNTERED]
+            
+            # initial_handとbottom_listが空の場合は削除
+            if all_initial_hand_empty and 'initial_hand' in result:
+                del result['initial_hand']
+            
+            if all_bottom_list_empty and 'bottom_list' in result:
+                del result['bottom_list']
     
     def run_draw_count_analysis(self, deck: list[str], initial_hand: list[str], min_draw: int = 10, max_draw: int = 19, iterations: int = 10000) -> list:
         results = []
@@ -411,36 +428,6 @@ class DeckAnalyzer:
         
         return results
     
-    def compare_decks(self, decks: list[list[str]], deck_names: list[str], draw_count: int, opponent_has_forces: bool = False, iterations: int = 10000):
-        results = []
-        
-        for i, deck in enumerate(decks):
-            deck_name = deck_names[i]
-            stats = self.run_multiple_simulations_without_initial_hand(
-                deck=deck, 
-                draw_count=draw_count, 
-                mulligan_until_necro=True, 
-                summoners_pact_strategy=SummonersPactStrategy.AUTO, 
-                opponent_has_forces=opponent_has_forces, 
-                iterations=iterations
-            )
-            
-            # デッキ名を追加
-            stats['deck_name'] = deck_name
-            
-            results.append(stats)
-        
-        # 不要な項目を削除
-        self._remove_unnecessary_fields(results)
-        
-        # 結果を表示
-        print("\nDeck Comparison Results:")
-        for result in results:
-            print(f"Deck: {result['deck_name']}, Win Rate: {result['win_rate']:.1f}%")
-            if opponent_has_forces and 'necro_resolve_rate' in result:
-                print(f"  Necro Resolve Rate: {result['necro_resolve_rate']:.1f}%")
-        
-        return results
     
     def compare_initial_hands(self, deck: list[str], initial_hands: list[list[str]], draw_count: int = 19, iterations: int = 10000):
         results = []

@@ -6,7 +6,7 @@ import datetime
 
 # 定数
 BEST_DECK_PATH = 'decks/gemstone4_paradise0_cantor0_chrome4_wind4_valakut3.txt'
-DEFAULT_ITERATIONS = 1000000
+DEFAULT_ITERATIONS = 10000
 
 def run_test_patterns(analyzer: DeckAnalyzer, pattern_list: list, filename: str, iterations: int = DEFAULT_ITERATIONS, sort_by_win_rate: bool = False):
     """
@@ -350,8 +350,7 @@ def run_with_auto_summoners_pact_strategy(analyzer: DeckAnalyzer, deck_path: str
     
     return results
 
-## old methods
-def create_custom_deck(card_counts: dict, base_deck_path: str = 'decks/gemstone4_paradise0_cantor1_chrome4_wind3_valakut3.txt') -> list:
+def create_custom_deck(card_counts: dict, base_deck_path: str = BEST_DECK_PATH) -> list:
     """
     指定されたカード枚数でデッキを作成する関数
     
@@ -379,7 +378,7 @@ def create_custom_deck(card_counts: dict, base_deck_path: str = 'decks/gemstone4
     
     return new_deck
 
-def compare_decks(analyzer: DeckAnalyzer, iterations: int = 1000000, opponent_has_forces: bool = False):
+def compare_decks(analyzer: DeckAnalyzer, opponent_has_forces: bool = False, iterations: int = DEFAULT_ITERATIONS):
     """
     様々なデッキバリエーションを比較する関数
     
@@ -391,35 +390,31 @@ def compare_decks(analyzer: DeckAnalyzer, iterations: int = 1000000, opponent_ha
     Returns:
         各デッキの結果のリスト
     """
-    # デッキとデッキ名のリスト
-    decks = []
-    deck_names = []
-    
     # デッキパターンのリスト
     # [GEMSTONE_MINE, UNDISCOVERED_PARADISE, WILD_CANTOR, CHROME_MOX, BORNE_UPON_WIND, VALAKUT_AWAKENING]
     deck_patterns = [
-        [4, 0, 1, 4, 3, 3],  # ベースデッキ
-        [4, 1, 0, 4, 3, 3],
-        [4, 0, 1, 4, 4, 2],
-        [4, 1, 0, 4, 4, 2],
-        [4, 0, 0, 4, 4, 3],
-        [4, 0, 0, 4, 4, 4],
-        [4, 1, 0, 3, 3, 4],
-        [4, 0, 1, 3, 4, 3],
-        [4, 1, 0, 3, 4, 3],
-        [4, 0, 0, 3, 4, 4],
-        [4, 1, 0, 4, 2, 4],
-        [4, 1, 1, 2, 4, 3],
-        [4, 0, 0, 4, 4, 3],
-        [4, 1, 0, 2, 4, 4],
-        [4, 0, 1, 2, 4, 4],
-        [4, 1, 0, 3, 4, 3],
+        [4, 2, 0, 3, 4, 2],
+        [4, 2, 0, 3, 3, 3],
         [4, 2, 0, 2, 4, 3],
+        [4, 1, 1, 2, 4, 3],
+        [4, 1, 0, 4, 4, 2],
+        [4, 1, 0, 4, 3, 3],
+        [4, 1, 0, 3, 4, 3],
+        [4, 1, 0, 3, 3, 4],
+        [4, 1, 0, 2, 4, 4],
+        [4, 0, 1, 4, 4, 2],
+        [4, 0, 1, 4, 3, 3],
+        [4, 0, 1, 3, 4, 3],
         [4, 0, 1, 2, 4, 4],
+        [4, 0, 0, 4, 4, 3],
+        [4, 0, 0, 3, 4, 4],
         [3, 0, 1, 4, 4, 3],
-        [3, 0, 0, 4, 4, 4],
-        [3, 0, 1, 3, 4, 4]
+        [3, 0, 1, 3, 4, 4],
+        [3, 0, 0, 4, 4, 4]
     ]
+    
+    # テストパターンのリストを作成
+    all_patterns = []
     
     # 各パターンに対してデッキを作成
     for pattern in deck_patterns:
@@ -437,15 +432,23 @@ def compare_decks(analyzer: DeckAnalyzer, iterations: int = 1000000, opponent_ha
         deck = create_custom_deck(card_counts)
         
         # デッキ名を作成
-        deck_name = f"GM{gemstone_count}_UP{paradise_count}_WC{cantor_count}_CM{chrome_count}_BW{wind_count}_VA{valakut_count}"
+        deck_name = f"Gemstone{gemstone_count}_Paradise{paradise_count}_Cantor{cantor_count}_Chrome{chrome_count}_Wind{wind_count}_Valakut{valakut_count}"
         
-        # デッキとデッキ名を追加
-        decks.append(deck)
-        deck_names.append(deck_name)
+        # パターンを追加
+        all_patterns.append({
+            'name': deck_name,
+            'deck': deck,
+            'initial_hand': [],  # 初期手札なし（run_multiple_simulations_without_initial_handを使用）
+            'bottom_list': [],
+            'summoners_pact_strategy': SummonersPactStrategy.AUTO,
+            'draw_count': 19
+        })
     
     # デッキの枚数とカード構成を確認
-    for i, deck in enumerate(decks):
-        print(f"Deck {deck_names[i]}: {len(deck)} cards")
+    for pattern in all_patterns:
+        deck = pattern['deck']
+        deck_name = pattern['name']
+        print(f"Deck {deck_name}: {len(deck)} cards")
         
         # カードの枚数を数える
         card_counts = {}
@@ -461,44 +464,49 @@ def compare_decks(analyzer: DeckAnalyzer, iterations: int = 1000000, opponent_ha
             count = card_counts.get(card, 0)
             print(f"  {card}: {count}")
     
-    # 比較を実行
-    results = analyzer.compare_decks(decks, deck_names, 19, opponent_has_forces, iterations)
+    # すべてのパターンを一度に実行
+    filename = "compare_deck_variations"
+    results = run_test_patterns(analyzer, all_patterns, filename, iterations, sort_by_win_rate=True)
     
     # 各結果にカード枚数情報を追加
     for i, result in enumerate(results):
-        gemstone_count, paradise_count, cantor_count, chrome_count, wind_count, valakut_count = deck_patterns[i]
-        result['GEMSTONE_MINE'] = gemstone_count
-        result['UNDISCOVERED_PARADISE'] = paradise_count
-        result['WILD_CANTOR'] = cantor_count
-        result['CHROME_MOX'] = chrome_count
-        result['BORNE_UPON_WIND'] = wind_count
-        result['VALAKUT_AWAKENING'] = valakut_count
-        
-        # deck_nameを削除
-        if 'deck_name' in result:
-            del result['deck_name']
-    
-    results.sort(key=lambda x: x['win_rate'], reverse=False)
+        pattern_name = result['pattern_name']
+        for pattern in all_patterns:
+            if pattern['name'] == pattern_name:
+                deck = pattern['deck']
+                # カードの枚数を数える
+                card_counts = {}
+                for card in deck:
+                    if card in card_counts:
+                        card_counts[card] += 1
+                    else:
+                        card_counts[card] = 1
+                
+                # 重要なカードの枚数を結果に追加
+                important_cards = [GEMSTONE_MINE, UNDISCOVERED_PARADISE, WILD_CANTOR, CHROME_MOX, BORNE_UPON_WIND, VALAKUT_AWAKENING]
+                for card in important_cards:
+                    count = card_counts.get(card, 0)
+                    result[card] = count
+                break
     
     # ソート後の結果を表示
     print("\nDeck Comparison Results (sorted by win rate):")
     for i, result in enumerate(results):
-        gemstone_count = result['GEMSTONE_MINE']
-        paradise_count = result['UNDISCOVERED_PARADISE']
-        cantor_count = result['WILD_CANTOR']
-        chrome_count = result['CHROME_MOX']
-        wind_count = result['BORNE_UPON_WIND']
-        valakut_count = result['VALAKUT_AWAKENING']
+        gemstone_count = result.get(GEMSTONE_MINE, 0)
+        paradise_count = result.get(UNDISCOVERED_PARADISE, 0)
+        cantor_count = result.get(WILD_CANTOR, 0)
+        chrome_count = result.get(CHROME_MOX, 0)
+        wind_count = result.get(BORNE_UPON_WIND, 0)
+        valakut_count = result.get(VALAKUT_AWAKENING, 0)
         
         deck_desc = f"GM{gemstone_count}_UP{paradise_count}_WC{cantor_count}_CM{chrome_count}_BW{wind_count}_VA{valakut_count}"
         print(f"Deck {i+1}: {deck_desc}, Win Rate: {result['win_rate']:.1f}%")
         if opponent_has_forces and 'necro_resolve_rate' in result:
             print(f"  Necro Resolve Rate: {result['necro_resolve_rate']:.1f}%")
     
-    # 結果をCSVに保存
-    save_results_to_csv('compare_deck_variations', results, DEFAULT_PRIORITY_FIELDS)
-    
     return results
+
+## old methods
 
 def analyze_draw_counts(analyzer: DeckAnalyzer, iterations: int = 100000):
     """
@@ -597,6 +605,7 @@ def compare_initial_hands(analyzer: DeckAnalyzer, iterations: int = 1000000):
     
     return results
 
+'''
 def compare_chancellor_decks(analyzer: DeckAnalyzer, iterations: int = 1000000):
     """
     Chancellor of the Annexを4枚追加したデッキバリエーションを比較する関数
@@ -684,6 +693,7 @@ def compare_chancellor_decks(analyzer: DeckAnalyzer, iterations: int = 1000000):
     save_results_to_csv('compare_chancellor_decks', results, DEFAULT_PRIORITY_FIELDS)
     
     return results
+'''
 
 def compare_keep_cards_for_hand(analyzer: DeckAnalyzer, initial_hand: list[str], deck_path: str = 'decks/wind3_valakut3_cantor0_paradise1.txt', draw_count: int = 19, iterations: int = 100000):
     """
@@ -778,6 +788,7 @@ def compare_keep_cards_for_hand(analyzer: DeckAnalyzer, initial_hand: list[str],
     
     return results
 
+'''
 def compare_chancellor_decks_against_counterspells(analyzer: DeckAnalyzer, iterations: int = 1000000):
     """
     相手のデッキに打ち消し呪文（Counterspell）が入っている場合に、
@@ -873,6 +884,7 @@ def compare_chancellor_decks_against_counterspells(analyzer: DeckAnalyzer, itera
     save_results_to_csv('compare_chancellor_decks_against_counterspells', results, DEFAULT_PRIORITY_FIELDS)
     
     return results
+'''
 
 
 if __name__ == "__main__":
@@ -883,7 +895,9 @@ if __name__ == "__main__":
     
     # Summoner's Pactをキャストするかどうかの戦略を比較
     print("\n=== compare_summoners_pact_strategies ===")
-    compare_summoners_pact_strategies(analyzer)
+    #compare_summoners_pact_strategies(analyzer)
+    #run_with_auto_summoners_pact_strategy(analyzer)
+    compare_decks(analyzer)
 
     #compare_decks(analyzer, DEFAULT_ITERATIONS)
     #analyze_draw_counts(analyzer)

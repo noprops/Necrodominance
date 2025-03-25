@@ -47,7 +47,7 @@ class TestRunGame(unittest.TestCase):
             initial_hand=initial_hand, 
             bottom_list=[], 
             draw_count=draw_count, 
-            cast_summoners_pact=True
+            summoners_pact_strategy=SummonersPactStrategy.AUTO
         )
         
         # Assert game result
