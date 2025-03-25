@@ -217,6 +217,9 @@ class DeckAnalyzer:
                 if reason in full_stats:
                     stats[reason] = full_stats[reason]
         
+        # 不要な項目を削除
+        self._remove_unnecessary_fields([stats])
+        
         return stats
     
     def run_multiple_simulations_without_initial_hand(self, deck: list[str], draw_count: int = 19, mulligan_until_necro: bool = True, summoners_pact_strategy = SummonersPactStrategy.AUTO, opponent_has_forces: bool = False, iterations: int = 10000) -> dict:
@@ -352,6 +355,9 @@ class DeckAnalyzer:
                 del stats['necro_countered_count']
             if 'necro_resolve_rate' in stats:
                 del stats['necro_resolve_rate']
+        
+        # 不要な項目を削除
+        self._remove_unnecessary_fields([stats])
         
         return stats
     
