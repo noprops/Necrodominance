@@ -6,7 +6,7 @@ import datetime
 
 # 定数
 BEST_DECK_PATH = 'decks/gemstone4_paradise0_cantor0_chrome4_wind4_valakut3.txt'
-DEFAULT_ITERATIONS = 10000
+DEFAULT_ITERATIONS = 100000
 
 def run_test_patterns(analyzer: DeckAnalyzer, pattern_list: list, filename: str, iterations: int = DEFAULT_ITERATIONS, sort_by_win_rate: bool = False):
     """
@@ -350,6 +350,44 @@ def run_with_auto_summoners_pact_strategy(analyzer: DeckAnalyzer, deck_path: str
     
     return results
 
+def analyze_draw_counts(analyzer: DeckAnalyzer, iterations: int = DEFAULT_ITERATIONS):
+    """
+    最適なデッキ（BEST_DECK_PATH）に対してドロー数分析を実行する関数
+    
+    Args:
+        analyzer: DeckAnalyzerインスタンス
+        iterations: シミュレーション回数
+        
+    Returns:
+        各ドロー数ごとの結果のリスト
+    """
+    initial_hand = [GEMSTONE_MINE, DARK_RITUAL, NECRODOMINANCE]
+    
+    print(f"\nAnalyzing best deck: {BEST_DECK_PATH}")
+    deck = create_deck(BEST_DECK_PATH)
+    deck_name = get_filename_without_extension(BEST_DECK_PATH)
+    
+    # テストパターンのリストを作成
+    patterns = []
+    for draw_count in range(19, 9, -1):  # 19から10までのドロー数
+        patterns.append({
+            'name': f'Draw {draw_count}',
+            'deck': deck,
+            'initial_hand': initial_hand,
+            'bottom_list': [],
+            'summoners_pact_strategy': SummonersPactStrategy.AUTO,
+            'draw_count': draw_count
+        })
+    
+    # run_test_patternsを使用してシミュレーションを実行
+    results = run_test_patterns(analyzer, patterns, 'analyze_draw_counts', iterations)
+    
+    # 各結果にデッキ名を追加
+    for result in results:
+        result['deck_name'] = deck_name
+    
+    return results
+
 def create_custom_deck(card_counts: dict, base_deck_path: str = BEST_DECK_PATH) -> list:
     """
     指定されたカード枚数でデッキを作成する関数
@@ -507,32 +545,6 @@ def compare_decks(analyzer: DeckAnalyzer, opponent_has_forces: bool = False, ite
     return results
 
 ## old methods
-
-def analyze_draw_counts(analyzer: DeckAnalyzer, iterations: int = 100000):
-    """
-    最適なデッキ（BEST_DECK_PATH）に対してドロー数分析を実行する関数
-    
-    Args:
-        analyzer: DeckAnalyzerインスタンス
-        
-    Returns:
-        各ドロー数ごとの結果のリスト
-    """
-    initial_hand = [GEMSTONE_MINE, DARK_RITUAL, NECRODOMINANCE]
-    
-    print(f"\nAnalyzing best deck: {BEST_DECK_PATH}")
-    deck = create_deck(BEST_DECK_PATH)
-    deck_name = get_filename_without_extension(BEST_DECK_PATH)
-
-    results = analyzer.run_draw_count_analysis(deck, initial_hand, min_draw=10, max_draw=19, iterations=iterations)
-    
-    # 各結果にデッキ名を追加
-    for result in results:
-        result['deck_name'] = deck_name
-    
-    save_results_to_csv('analyze_draw_counts', results, DEFAULT_PRIORITY_FIELDS)
-    
-    return results
 
 def compare_initial_hands(analyzer: DeckAnalyzer, iterations: int = 1000000):
     """
@@ -897,23 +909,8 @@ if __name__ == "__main__":
     print("\n=== compare_summoners_pact_strategies ===")
     #compare_summoners_pact_strategies(analyzer)
     #run_with_auto_summoners_pact_strategy(analyzer)
-    compare_decks(analyzer)
-
-    #compare_decks(analyzer, DEFAULT_ITERATIONS)
-    #analyze_draw_counts(analyzer)
-    #compare_initial_hands(analyzer, DEFAULT_ITERATIONS)
-    #compare_chancellor_decks(analyzer, DEFAULT_ITERATIONS)
-    #compare_chancellor_decks_against_counterspells(analyzer, DEFAULT_ITERATIONS)
-    '''
-    initial_hand = [GEMSTONE_MINE, DARK_RITUAL, NECRODOMINANCE, LOTUS_PETAL, BORNE_UPON_WIND, MANAMORPHOSE, VALAKUT_AWAKENING]
-    compare_keep_cards_for_hand(analyzer, initial_hand)
-    initial_hand = [GEMSTONE_MINE, DARK_RITUAL, NECRODOMINANCE, LOTUS_PETAL, LOTUS_PETAL, BORNE_UPON_WIND, VALAKUT_AWAKENING]
-    compare_keep_cards_for_hand(analyzer, initial_hand)
-    initial_hand = [GEMSTONE_MINE, DARK_RITUAL, NECRODOMINANCE, LOTUS_PETAL, LOTUS_PETAL, BORNE_UPON_WIND, MANAMORPHOSE]
-    compare_keep_cards_for_hand(analyzer, initial_hand)
-    initial_hand = [GEMSTONE_MINE, DARK_RITUAL, NECRODOMINANCE, LOTUS_PETAL, LOTUS_PETAL, MANAMORPHOSE, VALAKUT_AWAKENING]
-    compare_keep_cards_for_hand(analyzer, initial_hand)
-    '''
+    #compare_decks(analyzer)
+    analyze_draw_counts(analyzer)
     
     end_time = time.time()
     elapsed_time = end_time - start_time

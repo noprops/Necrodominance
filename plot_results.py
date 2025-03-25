@@ -12,7 +12,7 @@ def plot_mulligan_stats():
     """
     results/compare_deck_variations.csvからマリガン統計をグラフ化する関数
     縦軸はマリガン回数ごとのネクロを唱えた確率（%）
-    最も勝率の高いデッキ（GEMSTONE_MINE=4, UNDISCOVERED_PARADISE=0, WILD_CANTOR=0, CHROME_MOX=4, BORNE_UPON_WIND=4, VALAKUT_AWAKENING=3）に対して作成
+    最も勝率の高いデッキに対して作成
     """
     csv_path = 'results/compare_deck_variations.csv'
     if not os.path.exists(csv_path):
@@ -22,25 +22,18 @@ def plot_mulligan_stats():
     # CSVファイルを読み込む
     df = pd.read_csv(csv_path)
     
-    # 最も勝率の高いデッキを特定（GEMSTONE_MINE=4, UNDISCOVERED_PARADISE=0, WILD_CANTOR=0, CHROME_MOX=4, BORNE_UPON_WIND=4, VALAKUT_AWAKENING=3）
-    target_deck = df[
-        (df['GEMSTONE_MINE'] == 4) & 
-        (df['UNDISCOVERED_PARADISE'] == 0) & 
-        (df['WILD_CANTOR'] == 0) & 
-        (df['CHROME_MOX'] == 4) & 
-        (df['BORNE_UPON_WIND'] == 4) & 
-        (df['VALAKUT_AWAKENING'] == 3)
-    ]
+    # 最も勝率の高いデッキを特定
+    df = df.sort_values('win_rate', ascending=False)
     
-    if target_deck.empty:
-        print("Error: Target deck not found in CSV file")
+    if df.empty:
+        print("Error: No data found in CSV file")
         return
     
-    # 最初の行を使用（同じ条件に複数行が一致する場合）
-    deck_data = target_deck.iloc[0:1]
+    # 最も勝率の高い行を使用
+    deck_data = df.iloc[0:1]
     
-    # デッキの説明を作成
-    deck_desc = f"GM4_UP0_WC0_CM4_BW4_VA3"
+    # デッキの説明にpattern_nameを使用
+    deck_desc = deck_data['pattern_name'].values[0]
     
     # 必要なデータを抽出
     mulligan_counts = range(5)  # 0から4までのマリガン回数

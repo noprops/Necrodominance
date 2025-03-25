@@ -409,26 +409,6 @@ class DeckAnalyzer:
             if all_bottom_list_empty and 'bottom_list' in result:
                 del result['bottom_list']
     
-    def run_draw_count_analysis(self, deck: list[str], initial_hand: list[str], min_draw: int = 10, max_draw: int = 19, iterations: int = 10000) -> list:
-        results = []
-        for draw_count in range(max_draw, min_draw - 1, -1):
-            print(f"\nAnalyzing draw_count = {draw_count}")
-            stats = self.run_multiple_simulations_with_initial_hand(
-                deck=deck, 
-                initial_hand=initial_hand, 
-                bottom_list=[], 
-                draw_count=draw_count, 
-                summoners_pact_strategy=SummonersPactStrategy.AUTO, 
-                iterations=iterations
-            )
-            results.append(stats)
-        
-        # 不要な項目を削除
-        self._remove_unnecessary_fields(results)
-        
-        return results
-    
-    
     def compare_initial_hands(self, deck: list[str], initial_hands: list[list[str]], draw_count: int = 19, iterations: int = 10000):
         results = []
         
