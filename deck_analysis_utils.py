@@ -6,7 +6,7 @@ import datetime
 
 # 定数
 BEST_DECK_PATH = 'decks/gemstone4_paradise0_cantor0_chrome4_wind4_valakut3.txt'
-DEFAULT_ITERATIONS = 100000
+DEFAULT_ITERATIONS = 1000000
 
 def run_test_patterns(analyzer: DeckAnalyzer, pattern_list: list, filename: str, iterations: int = DEFAULT_ITERATIONS, sort_by_win_rate: bool = False):
     """
@@ -80,9 +80,9 @@ def run_test_patterns(analyzer: DeckAnalyzer, pattern_list: list, filename: str,
         
         results.append(result)
     
-    # sort_by_win_rateがTrueの場合のみ結果をソート
+    # sort_by_win_rateがTrueの場合のみ結果を勝率の昇順でソート
     if sort_by_win_rate:
-        results.sort(key=lambda x: x['win_rate'], reverse=True)
+        results.sort(key=lambda x: x['win_rate'], reverse=False)
     
     # 結果を表示
     print("\nTest Pattern Results:")
@@ -94,7 +94,35 @@ def run_test_patterns(analyzer: DeckAnalyzer, pattern_list: list, filename: str,
     
     return results
 
-def compare_summoners_pact_strategies(analyzer: DeckAnalyzer, deck_path: str = BEST_DECK_PATH, draw_count: int = 19, iterations: int = DEFAULT_ITERATIONS):
+def create_custom_deck(card_counts: dict, base_deck_path: str = BEST_DECK_PATH) -> list:
+    """
+    指定されたカード枚数でデッキを作成する関数
+    
+    Args:
+        card_counts: カードと枚数の辞書 (例: {GEMSTONE_MINE: 4, CHROME_MOX: 4})
+        base_deck_path: ベースデッキのファイルパス
+        
+    Returns:
+        作成されたデッキ（カード名のリスト）
+    """
+    # ベースデッキを読み込む
+    base_deck = create_deck(base_deck_path)
+    
+    # 辞書のキーに含まれるカードをベースデッキから削除
+    remove_cards = list(card_counts.keys())
+    new_deck = [card for card in base_deck if card not in remove_cards]
+    
+    # 指定されたカードを追加
+    for card, count in card_counts.items():
+        new_deck.extend([card] * count)
+    
+    # デッキの枚数を確認
+    if len(new_deck) != 60:
+        print(f"Warning: Deck has {len(new_deck)} cards, not 60.")
+    
+    return new_deck
+
+def simulate_summoners_pact_strategies(analyzer: DeckAnalyzer, deck_path: str = BEST_DECK_PATH, draw_count: int = 19, iterations: int = DEFAULT_ITERATIONS):
     """
     複数の初期手札と底札の組み合わせについて、Summoner's Pactをキャストするかどうかを比較する関数
     
@@ -193,7 +221,7 @@ def compare_summoners_pact_strategies(analyzer: DeckAnalyzer, deck_path: str = B
         })
     
     # すべてのパターンを一度に実行
-    filename = "compare_summoners_pact_strategies_all_cases"
+    filename = "simulate_summoners_pact_strategies"
     results = run_test_patterns(analyzer, all_patterns, filename, iterations)
     
     # 結果を整理
@@ -252,11 +280,11 @@ def compare_summoners_pact_strategies(analyzer: DeckAnalyzer, deck_path: str = B
         print(f"- {case}")
     
     # 結果をCSVに保存
-    save_results_to_csv('compare_summoners_pact_strategies_summary', all_results, ['case', 'initial_hand', 'bottom_list', 'win_rate_without_cast', 'win_rate_with_cast', 'win_rate_diff', 'better_strategy'])
+    save_results_to_csv('simulate_summoners_pact_strategies_summary', all_results, ['case', 'initial_hand', 'bottom_list', 'win_rate_without_cast', 'win_rate_with_cast', 'win_rate_diff', 'better_strategy'])
     
     return all_results
 
-def run_with_auto_summoners_pact_strategy(analyzer: DeckAnalyzer, deck_path: str = BEST_DECK_PATH, draw_count: int = 19, iterations: int = DEFAULT_ITERATIONS):
+def simulate_auto_summoners_pact_strategy(analyzer: DeckAnalyzer, deck_path: str = BEST_DECK_PATH, draw_count: int = 19, iterations: int = DEFAULT_ITERATIONS):
     """
     複数の初期手札と底札の組み合わせについて、Summoner's Pactの戦略をAUTOに設定してシミュレーションを実行する関数
     
@@ -340,7 +368,7 @@ def run_with_auto_summoners_pact_strategy(analyzer: DeckAnalyzer, deck_path: str
         })
     
     # すべてのパターンを一度に実行
-    filename = "auto_summoners_pact_strategy_all_cases"
+    filename = "simulate_auto_summoners_pact_strategy"
     results = run_test_patterns(analyzer, all_patterns, filename, iterations)
     
     # 結果を表示
@@ -350,7 +378,7 @@ def run_with_auto_summoners_pact_strategy(analyzer: DeckAnalyzer, deck_path: str
     
     return results
 
-def analyze_draw_counts(analyzer: DeckAnalyzer, iterations: int = DEFAULT_ITERATIONS):
+def simulate_draw_counts(analyzer: DeckAnalyzer, iterations: int = DEFAULT_ITERATIONS):
     """
     最適なデッキ（BEST_DECK_PATH）に対してドロー数分析を実行する関数
     
@@ -380,7 +408,7 @@ def analyze_draw_counts(analyzer: DeckAnalyzer, iterations: int = DEFAULT_ITERAT
         })
     
     # run_test_patternsを使用してシミュレーションを実行
-    results = run_test_patterns(analyzer, patterns, 'analyze_draw_counts', iterations)
+    results = run_test_patterns(analyzer, patterns, 'simulate_draw_counts', iterations)
     
     # 各結果にデッキ名を追加
     for result in results:
@@ -388,35 +416,7 @@ def analyze_draw_counts(analyzer: DeckAnalyzer, iterations: int = DEFAULT_ITERAT
     
     return results
 
-def create_custom_deck(card_counts: dict, base_deck_path: str = BEST_DECK_PATH) -> list:
-    """
-    指定されたカード枚数でデッキを作成する関数
-    
-    Args:
-        card_counts: カードと枚数の辞書 (例: {GEMSTONE_MINE: 4, CHROME_MOX: 4})
-        base_deck_path: ベースデッキのファイルパス
-        
-    Returns:
-        作成されたデッキ（カード名のリスト）
-    """
-    # ベースデッキを読み込む
-    base_deck = create_deck(base_deck_path)
-    
-    # 辞書のキーに含まれるカードをベースデッキから削除
-    remove_cards = list(card_counts.keys())
-    new_deck = [card for card in base_deck if card not in remove_cards]
-    
-    # 指定されたカードを追加
-    for card, count in card_counts.items():
-        new_deck.extend([card] * count)
-    
-    # デッキの枚数を確認
-    if len(new_deck) != 60:
-        print(f"Warning: Deck has {len(new_deck)} cards, not 60.")
-    
-    return new_deck
-
-def compare_decks(analyzer: DeckAnalyzer, opponent_has_forces: bool = False, iterations: int = DEFAULT_ITERATIONS):
+def simulate_deck_variations(analyzer: DeckAnalyzer, opponent_has_forces: bool = False, iterations: int = DEFAULT_ITERATIONS):
     """
     様々なデッキバリエーションを比較する関数
     
@@ -503,7 +503,7 @@ def compare_decks(analyzer: DeckAnalyzer, opponent_has_forces: bool = False, ite
             print(f"  {card}: {count}")
     
     # すべてのパターンを一度に実行
-    filename = "compare_deck_variations"
+    filename = "simulate_deck_variations"
     results = run_test_patterns(analyzer, all_patterns, filename, iterations, sort_by_win_rate=True)
     
     # 各結果にカード枚数情報を追加
@@ -544,9 +544,7 @@ def compare_decks(analyzer: DeckAnalyzer, opponent_has_forces: bool = False, ite
     
     return results
 
-## old methods
-
-def compare_initial_hands(analyzer: DeckAnalyzer, iterations: int = 1000000):
+def simulate_initial_hands(analyzer: DeckAnalyzer, iterations: int = DEFAULT_ITERATIONS):
     """
     プリセットされた初期手札のリストを比較する関数
     
@@ -567,7 +565,6 @@ def compare_initial_hands(analyzer: DeckAnalyzer, iterations: int = 1000000):
     initial_hands.append(base_hand.copy())
     
     # 1枚加える
-    '''
     one_card_additions = [
         GEMSTONE_MINE,
         ELVISH_SPIRIT_GUIDE,
@@ -583,11 +580,6 @@ def compare_initial_hands(analyzer: DeckAnalyzer, iterations: int = 1000000):
         BESEECH_MIRROR,
         TENDRILS_OF_AGONY
     ]
-    '''
-    one_card_additions = [
-        DARK_RITUAL,
-        CABAL_RITUAL
-    ]
     
     for card in one_card_additions:
         hand = base_hand.copy()
@@ -595,7 +587,6 @@ def compare_initial_hands(analyzer: DeckAnalyzer, iterations: int = 1000000):
         initial_hands.append(hand)
     
     # 2枚加える
-    '''
     two_card_additions = [
         [ELVISH_SPIRIT_GUIDE, SIMIAN_SPIRIT_GUIDE],
         [LOTUS_PETAL, LOTUS_PETAL],
@@ -607,15 +598,124 @@ def compare_initial_hands(analyzer: DeckAnalyzer, iterations: int = 1000000):
         hand = base_hand.copy()
         hand.extend(cards)
         initial_hands.append(hand)
-    '''
     
     # ベストなデッキを使用
     deck = create_deck(BEST_DECK_PATH)
-    results = analyzer.compare_initial_hands(deck, initial_hands, 19, iterations)
     
-    save_results_to_csv('compare_initial_hands', results, DEFAULT_PRIORITY_FIELDS)
+    # テストパターンのリストを作成
+    all_patterns = []
+    
+    # 各初期手札に対してパターンを作成
+    for i, hand in enumerate(initial_hands):
+        # パターン名を作成
+        hand_str = ', '.join(hand)
+        pattern_name = f"Hand {i+1}: {hand_str}"
+        
+        # パターンを追加
+        all_patterns.append({
+            'name': pattern_name,
+            'deck': deck,
+            'initial_hand': hand,
+            'bottom_list': [],
+            'summoners_pact_strategy': SummonersPactStrategy.AUTO,
+            'draw_count': 19
+        })
+    
+    # すべてのパターンを一度に実行
+    filename = "simulate_initial_hands"
+    results = run_test_patterns(analyzer, all_patterns, filename, iterations, sort_by_win_rate=True)
     
     return results
+
+def simulate_mulligan_strategies(analyzer: DeckAnalyzer, deck_path: str = BEST_DECK_PATH, draw_count: int = 19, iterations: int = DEFAULT_ITERATIONS):
+    """
+    7枚の手札からマリガンしてボトムに戻すカードを比較する関数
+    
+    初期手札 [GEMSTONE_MINE, DARK_RITUAL, NECRODOMINANCE, LOTUS_PETAL, MANAMORPHOSE, BORNE_UPON_WIND, VALAKUT_AWAKENING] から
+    LOTUS_PETAL, MANAMORPHOSE, BORNE_UPON_WIND, VALAKUT_AWAKENINGの中から0枚、1枚、2枚、3枚をデッキボトムに戻す
+    すべての組み合わせを比較します。
+    
+    Args:
+        analyzer: DeckAnalyzerインスタンス
+        deck_path: デッキファイルのパス
+        draw_count: ドロー数
+        iterations: シミュレーション回数
+        
+    Returns:
+        各戦略の結果のリスト
+    """
+    # デッキを読み込む
+    deck = create_deck(deck_path)
+    
+    # 初期手札を定義
+    initial_hand = [GEMSTONE_MINE, DARK_RITUAL, NECRODOMINANCE, LOTUS_PETAL, MANAMORPHOSE, BORNE_UPON_WIND, VALAKUT_AWAKENING]
+    
+    # ボトムに戻す可能性のあるカード
+    bottom_candidates = [LOTUS_PETAL, MANAMORPHOSE, BORNE_UPON_WIND, VALAKUT_AWAKENING]
+    
+    # テストパターンのリストを作成
+    all_patterns = []
+    
+    # ケース1: 0枚ボトムに戻す（すべてキープ）
+    all_patterns.append({
+        'name': 'Keep all 7 cards',
+        'deck': deck,
+        'initial_hand': initial_hand,
+        'bottom_list': [],
+        'summoners_pact_strategy': SummonersPactStrategy.AUTO,
+        'draw_count': draw_count
+    })
+    
+    # ケース2: 1枚ボトムに戻す（4通り）
+    for card in bottom_candidates:
+        bottom_list = [card]
+        pattern_name = f"Bottom 1: {card}"
+        
+        all_patterns.append({
+            'name': pattern_name,
+            'deck': deck,
+            'initial_hand': initial_hand,
+            'bottom_list': bottom_list,
+            'summoners_pact_strategy': SummonersPactStrategy.AUTO,
+            'draw_count': draw_count
+        })
+    
+    # ケース3: 2枚ボトムに戻す（6通り）
+    from itertools import combinations
+    for combo in combinations(bottom_candidates, 2):
+        bottom_list = list(combo)
+        pattern_name = f"Bottom 2: {bottom_list[0]}, {bottom_list[1]}"
+        
+        all_patterns.append({
+            'name': pattern_name,
+            'deck': deck,
+            'initial_hand': initial_hand,
+            'bottom_list': bottom_list,
+            'summoners_pact_strategy': SummonersPactStrategy.AUTO,
+            'draw_count': draw_count
+        })
+    
+    # ケース4: 3枚ボトムに戻す（4通り）
+    for combo in combinations(bottom_candidates, 3):
+        bottom_list = list(combo)
+        pattern_name = f"Bottom 3: {bottom_list[0]}, {bottom_list[1]}, {bottom_list[2]}"
+        
+        all_patterns.append({
+            'name': pattern_name,
+            'deck': deck,
+            'initial_hand': initial_hand,
+            'bottom_list': bottom_list,
+            'summoners_pact_strategy': SummonersPactStrategy.AUTO,
+            'draw_count': draw_count
+        })
+    
+    # すべてのパターンを一度に実行
+    filename = "simulate_mulligan_strategies"
+    results = run_test_patterns(analyzer, all_patterns, filename, iterations, sort_by_win_rate=True)
+    
+    return results
+
+## old methods
 
 '''
 def compare_chancellor_decks(analyzer: DeckAnalyzer, iterations: int = 1000000):
@@ -707,98 +807,6 @@ def compare_chancellor_decks(analyzer: DeckAnalyzer, iterations: int = 1000000):
     return results
 '''
 
-def compare_keep_cards_for_hand(analyzer: DeckAnalyzer, initial_hand: list[str], deck_path: str = 'decks/wind3_valakut3_cantor0_paradise1.txt', draw_count: int = 19, iterations: int = 100000):
-    """
-    特定の初期手札に対してキープするカードを比較する関数
-    
-    初期手札からGemstone Mine, Dark Ritual, Necrodominanceの3枚を除いた残りのカードについて、
-    各カードを1枚だけ手札に残し、他をデッキボトムに送る戦略を比較します。
-    
-    Args:
-        analyzer: DeckAnalyzerインスタンス
-        initial_hand: 初期手札
-        deck_path: デッキファイルのパス
-        draw_count: ドロー数
-        iterations: シミュレーション回数
-        
-    Returns:
-        各戦略の結果のリスト
-    """
-    # デッキを読み込む
-    deck = create_deck(deck_path)
-    
-    # 結果を格納するリスト
-    results = []
-    
-    # 必須の3枚を取り除いたカードリストを作成
-    core_cards = [GEMSTONE_MINE, DARK_RITUAL, NECRODOMINANCE]
-    remaining_cards = initial_hand.copy()
-    for card in core_cards:
-        remaining_cards.remove(card)
-    
-    # ユニークなカードのセットを作成
-    unique_cards = set(remaining_cards)
-    
-    # 初期手札の内容を文字列化してファイル名に使用
-    hand_str = '_'.join([card.split(' ')[0] for card in initial_hand if card not in core_cards])
-    if len(hand_str) > 50:  # ファイル名が長すぎる場合は短くする
-        hand_str = hand_str[:50]
-    
-    print(f"\nAnalyzing initial hand: {', '.join(initial_hand)}")
-    
-    # 各カードを1枚だけ手札に残す戦略をループ
-    for keep_card in unique_cards:
-        # デッキボトムに送るカードリストを作成
-        bottom_list = remaining_cards.copy()
-        bottom_list.remove(keep_card)
-        
-        print(f"Testing strategy: Keep {keep_card}, Bottom: {', '.join(bottom_list)}")
-        
-        # シミュレーション実行
-        stats = analyzer.run_multiple_simulations_with_initial_hand(
-            deck=deck, 
-            initial_hand=initial_hand, 
-            bottom_list=bottom_list, 
-            draw_count=draw_count, 
-            summoners_pact_strategy=SummonersPactStrategy.ALWAYS_CAST, 
-            iterations=iterations
-        )
-        
-        # 手札に残したカードをラベル付け
-        stats['kept_card'] = keep_card
-        stats['bottom_cards'] = ', '.join(bottom_list)
-        stats['initial_hand'] = ', '.join(initial_hand)
-        
-        results.append(stats)
-    
-    # すべてのカードをデッキボトムに送る戦略も追加
-    bottom_list = remaining_cards.copy()
-    print(f"Testing strategy: Keep None, Bottom: {', '.join(bottom_list)}")
-    stats = analyzer.run_multiple_simulations_with_initial_hand(
-        deck=deck, 
-        initial_hand=initial_hand, 
-        bottom_list=bottom_list, 
-        draw_count=draw_count, 
-        summoners_pact_strategy=SummonersPactStrategy.ALWAYS_CAST, 
-        iterations=iterations
-    )
-    stats['kept_card'] = 'None'
-    stats['bottom_cards'] = ', '.join(bottom_list)
-    stats['initial_hand'] = ', '.join(initial_hand)
-    results.append(stats)
-    
-    results.sort(key=lambda x: x['win_rate'], reverse=False)
-    
-    # 結果を表示
-    print("\nMulligan Strategy Comparison Results (sorted by win rate):")
-    for result in results:
-        print(f"Kept Card: {result['kept_card']}, Bottom Cards: {result['bottom_cards']}, Win Rate: {result['win_rate']:.1f}%")
-    
-    # 結果をCSVに保存
-    filename = f"compare_keep_cards_{hand_str}"
-    save_results_to_csv(filename, results, DEFAULT_PRIORITY_FIELDS)
-    
-    return results
 
 '''
 def compare_chancellor_decks_against_counterspells(analyzer: DeckAnalyzer, iterations: int = 1000000):
@@ -905,12 +913,14 @@ if __name__ == "__main__":
     print("シミュレーション開始: ", datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
     start_time = time.time()
     
-    # Summoner's Pactをキャストするかどうかの戦略を比較
-    print("\n=== compare_summoners_pact_strategies ===")
-    #compare_summoners_pact_strategies(analyzer)
-    #run_with_auto_summoners_pact_strategy(analyzer)
-    #compare_decks(analyzer)
-    analyze_draw_counts(analyzer)
+    # シミュレーション関数を実行
+    print("\n=== シミュレーション実行 ===")
+    #simulate_summoners_pact_strategies(analyzer)
+    #simulate_auto_summoners_pact_strategy(analyzer)
+    #simulate_deck_variations(analyzer)
+    #simulate_draw_counts(analyzer)
+    #simulate_initial_hands(analyzer)
+    #simulate_mulligan_strategies(analyzer)
     
     end_time = time.time()
     elapsed_time = end_time - start_time
