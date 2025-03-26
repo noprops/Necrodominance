@@ -6,7 +6,7 @@ import datetime
 
 # 定数
 BEST_DECK_PATH = 'decks/gemstone4_paradise0_cantor0_chrome4_wind4_valakut3.txt'
-DEFAULT_ITERATIONS = 10000
+DEFAULT_ITERATIONS = 1000000
 
 def run_test_patterns(analyzer: DeckAnalyzer, pattern_list: list, filename: str, iterations: int = DEFAULT_ITERATIONS, sort_by_win_rate: bool = False):
     """
@@ -627,18 +627,17 @@ def simulate_initial_hands(analyzer: DeckAnalyzer, iterations: int = DEFAULT_ITE
     
     return results
 
-def simulate_mulligan_strategies(analyzer: DeckAnalyzer, deck_path: str = BEST_DECK_PATH, draw_count: int = 19, iterations: int = DEFAULT_ITERATIONS):
+def simulate_bottom_strategies(analyzer: DeckAnalyzer, initial_hand: list, bottom_candidates: list, pattern_name: str = "", deck_path: str = BEST_DECK_PATH, draw_count: int = 19, iterations: int = DEFAULT_ITERATIONS):
     """
-    7枚の手札からマリガンしてボトムに戻すカードを比較する関数
+    指定された初期手札とボトム候補カードに対して、様々なボトム戦略をシミュレーションする汎用関数
     
-    以下の2つの初期手札パターンについて、様々なボトム戦略を比較します：
-    1. [GEMSTONE_MINE, DARK_RITUAL, NECRODOMINANCE, LOTUS_PETAL, MANAMORPHOSE, BORNE_UPON_WIND, VALAKUT_AWAKENING]
-    2. [GEMSTONE_MINE, DARK_RITUAL, NECRODOMINANCE, PACT_OF_NEGATION, MANAMORPHOSE, BORNE_UPON_WIND, VALAKUT_AWAKENING]
-    
-    それぞれの初期手札について、0枚、1枚、2枚、3枚をデッキボトムに戻すすべての組み合わせを比較します。
+    0枚から len(bottom_candidates) 枚までのすべての組み合わせについてシミュレーションを実行します。
     
     Args:
         analyzer: DeckAnalyzerインスタンス
+        initial_hand: 初期手札のリスト
+        bottom_candidates: ボトム候補カードのリスト
+        pattern_name: CSVファイル名の一部に使用する名前
         deck_path: デッキファイルのパス
         draw_count: ドロー数
         iterations: シミュレーション回数
@@ -652,123 +651,89 @@ def simulate_mulligan_strategies(analyzer: DeckAnalyzer, deck_path: str = BEST_D
     # テストパターンのリストを作成
     all_patterns = []
     
-    # パターン1: Lotus Petalを含む初期手札
-    initial_hand_1 = [GEMSTONE_MINE, DARK_RITUAL, NECRODOMINANCE, LOTUS_PETAL, MANAMORPHOSE, BORNE_UPON_WIND, VALAKUT_AWAKENING]
-    bottom_candidates_1 = [LOTUS_PETAL, MANAMORPHOSE, BORNE_UPON_WIND, VALAKUT_AWAKENING]
-    
-    # ケース1-1: 0枚ボトムに戻す（すべてキープ）
+    # ケース1: 0枚ボトムに戻す（すべてキープ）
     all_patterns.append({
-        'name': 'Pattern 1 - Keep all 7 cards',
+        'name': 'Keep all 7 cards',
         'deck': deck,
-        'initial_hand': initial_hand_1,
+        'initial_hand': initial_hand,
         'bottom_list': [],
         'summoners_pact_strategy': SummonersPactStrategy.AUTO,
         'draw_count': draw_count
     })
     
-    # ケース1-2: 1枚ボトムに戻す（4通り）
-    for card in bottom_candidates_1:
-        bottom_list = [card]
-        pattern_name = f"Pattern 1 - Bottom 1: {card}"
-        
-        all_patterns.append({
-            'name': pattern_name,
-            'deck': deck,
-            'initial_hand': initial_hand_1,
-            'bottom_list': bottom_list,
-            'summoners_pact_strategy': SummonersPactStrategy.AUTO,
-            'draw_count': draw_count
-        })
-    
-    # ケース1-3: 2枚ボトムに戻す（6通り）
+    # 1枚以上ボトムに戻す場合
     from itertools import combinations
-    for combo in combinations(bottom_candidates_1, 2):
-        bottom_list = list(combo)
-        pattern_name = f"Pattern 1 - Bottom 2: {bottom_list[0]}, {bottom_list[1]}"
-        
-        all_patterns.append({
-            'name': pattern_name,
-            'deck': deck,
-            'initial_hand': initial_hand_1,
-            'bottom_list': bottom_list,
-            'summoners_pact_strategy': SummonersPactStrategy.AUTO,
-            'draw_count': draw_count
-        })
+    for n in range(1, len(bottom_candidates) + 1):
+        for combo in combinations(bottom_candidates, n):
+            bottom_list = list(combo)
+            pattern_name_with_details = f"Bottom {n}: {', '.join(bottom_list)}"
+            
+            all_patterns.append({
+                'name': pattern_name_with_details,
+                'deck': deck,
+                'initial_hand': initial_hand,
+                'bottom_list': bottom_list,
+                'summoners_pact_strategy': SummonersPactStrategy.AUTO,
+                'draw_count': draw_count
+            })
     
-    # ケース1-4: 3枚ボトムに戻す（4通り）
-    for combo in combinations(bottom_candidates_1, 3):
-        bottom_list = list(combo)
-        pattern_name = f"Pattern 1 - Bottom 3: {bottom_list[0]}, {bottom_list[1]}, {bottom_list[2]}"
+    # CSVファイル名を生成
+    filename = f"simulate_bottom_strategies_{pattern_name}" if pattern_name else "simulate_bottom_strategies"
+    
+    # すべてのパターンを一度に実行
+    results = run_test_patterns(analyzer, all_patterns, filename, iterations, sort_by_win_rate=False)
+    
+    return results
+
+def simulate_mulligan_strategies(analyzer: DeckAnalyzer, deck_path: str = BEST_DECK_PATH, draw_count: int = 19, iterations: int = DEFAULT_ITERATIONS):
+    """
+    複数の初期手札パターンについて、様々なボトム戦略をシミュレーションする関数
+    
+    以下の2つの初期手札パターンについて、様々なボトム戦略を比較します：
+    1. [GEMSTONE_MINE, DARK_RITUAL, NECRODOMINANCE, LOTUS_PETAL, MANAMORPHOSE, BORNE_UPON_WIND, VALAKUT_AWAKENING]
+    2. [GEMSTONE_MINE, DARK_RITUAL, NECRODOMINANCE, PACT_OF_NEGATION, MANAMORPHOSE, BORNE_UPON_WIND, VALAKUT_AWAKENING]
+    
+    Args:
+        analyzer: DeckAnalyzerインスタンス
+        deck_path: デッキファイルのパス
+        draw_count: ドロー数
+        iterations: シミュレーション回数
         
-        all_patterns.append({
-            'name': pattern_name,
-            'deck': deck,
-            'initial_hand': initial_hand_1,
-            'bottom_list': bottom_list,
-            'summoners_pact_strategy': SummonersPactStrategy.AUTO,
-            'draw_count': draw_count
-        })
+    Returns:
+        各戦略の結果のリスト（最後に実行したパターンの結果のみ）
+    """
+    # パターン1: Lotus Petalを含む初期手札
+    initial_hand_1 = [GEMSTONE_MINE, DARK_RITUAL, NECRODOMINANCE, LOTUS_PETAL, MANAMORPHOSE, BORNE_UPON_WIND, VALAKUT_AWAKENING]
+    bottom_candidates_1 = [LOTUS_PETAL, MANAMORPHOSE, BORNE_UPON_WIND, VALAKUT_AWAKENING]
+    
+    # パターン1のシミュレーションを実行
+    results_1 = simulate_bottom_strategies(
+        analyzer=analyzer,
+        initial_hand=initial_hand_1,
+        bottom_candidates=bottom_candidates_1,
+        pattern_name="Lotus_Petal",
+        deck_path=deck_path,
+        draw_count=draw_count,
+        iterations=iterations
+    )
     
     # パターン2: Pact of Negationを含む初期手札
     initial_hand_2 = [GEMSTONE_MINE, DARK_RITUAL, NECRODOMINANCE, PACT_OF_NEGATION, MANAMORPHOSE, BORNE_UPON_WIND, VALAKUT_AWAKENING]
     bottom_candidates_2 = [MANAMORPHOSE, BORNE_UPON_WIND, VALAKUT_AWAKENING]
     
-    # ケース2-1: 0枚ボトムに戻す（すべてキープ）
-    all_patterns.append({
-        'name': 'Pattern 2 - Keep all 7 cards',
-        'deck': deck,
-        'initial_hand': initial_hand_2,
-        'bottom_list': [],
-        'summoners_pact_strategy': SummonersPactStrategy.AUTO,
-        'draw_count': draw_count
-    })
+    # パターン2のシミュレーションを実行
+    results_2 = simulate_bottom_strategies(
+        analyzer=analyzer,
+        initial_hand=initial_hand_2,
+        bottom_candidates=bottom_candidates_2,
+        pattern_name="Pact_of_Negation",
+        deck_path=deck_path,
+        draw_count=draw_count,
+        iterations=iterations
+    )
     
-    # ケース2-2: 1枚ボトムに戻す（3通り）
-    for card in bottom_candidates_2:
-        bottom_list = [card]
-        pattern_name = f"Pattern 2 - Bottom 1: {card}"
-        
-        all_patterns.append({
-            'name': pattern_name,
-            'deck': deck,
-            'initial_hand': initial_hand_2,
-            'bottom_list': bottom_list,
-            'summoners_pact_strategy': SummonersPactStrategy.AUTO,
-            'draw_count': draw_count
-        })
-    
-    # ケース2-3: 2枚ボトムに戻す（3通り）
-    for combo in combinations(bottom_candidates_2, 2):
-        bottom_list = list(combo)
-        pattern_name = f"Pattern 2 - Bottom 2: {bottom_list[0]}, {bottom_list[1]}"
-        
-        all_patterns.append({
-            'name': pattern_name,
-            'deck': deck,
-            'initial_hand': initial_hand_2,
-            'bottom_list': bottom_list,
-            'summoners_pact_strategy': SummonersPactStrategy.AUTO,
-            'draw_count': draw_count
-        })
-    
-    # ケース2-4: 3枚ボトムに戻す（1通り）
-    bottom_list = bottom_candidates_2.copy()
-    pattern_name = f"Pattern 2 - Bottom 3: {bottom_list[0]}, {bottom_list[1]}, {bottom_list[2]}"
-    
-    all_patterns.append({
-        'name': pattern_name,
-        'deck': deck,
-        'initial_hand': initial_hand_2,
-        'bottom_list': bottom_list,
-        'summoners_pact_strategy': SummonersPactStrategy.AUTO,
-        'draw_count': draw_count
-    })
-    
-    # すべてのパターンを一度に実行
-    filename = "simulate_mulligan_strategies"
-    results = run_test_patterns(analyzer, all_patterns, filename, iterations, sort_by_win_rate=False)
-    
-    return results
+    # 最後に実行したパターンの結果を返す
+    return results_2
 
 ## old methods
 
