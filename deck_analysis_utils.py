@@ -8,6 +8,7 @@ import itertools
 # 定数
 BEST_DECK_PATH = 'decks/gemstone4_paradise0_cantor0_chrome4_wind4_valakut3.txt'
 DEFAULT_ITERATIONS = 1000000
+DEFAULT_INITIAL_ITERATIONS = 100000
 
 def run_test_patterns(analyzer: DeckAnalyzer, pattern_list: list, filename: str, iterations: int = DEFAULT_ITERATIONS, sort_by_win_rate: bool = False):
     """
@@ -752,7 +753,7 @@ def simulate_card_combinations(analyzer: DeckAnalyzer, card_ranges: dict, total_
         iterations=iterations
     )
 
-def simulate_two_phase_combinations(analyzer: DeckAnalyzer, card_ranges: dict, total_cards_count: int, filename: str, opponent_has_forces: bool = False, phase2_card_counts: list = None, top_count: int = 20, initial_iterations: int = 100000, final_iterations: int = DEFAULT_ITERATIONS):
+def simulate_two_phase_combinations(analyzer: DeckAnalyzer, card_ranges: dict, total_cards_count: int, filename: str, opponent_has_forces: bool = False, phase2_card_counts: list = None, top_count: int = 20, initial_iterations: int = DEFAULT_INITIAL_ITERATIONS, final_iterations: int = DEFAULT_ITERATIONS):
     """
     2段階のシミュレーションを実行する汎用関数
     
@@ -765,9 +766,10 @@ def simulate_two_phase_combinations(analyzer: DeckAnalyzer, card_ranges: dict, t
         total_cards_count: 合計カード枚数
         filename: 結果を保存するCSVファイルの名前（拡張子なし）
         opponent_has_forces: 相手がForceを持っているかどうか（デフォルトはFalse）
-        initial_iterations: 第1フェーズのシミュレーション回数（デフォルトは100,000）
-        final_iterations: 第2フェーズのシミュレーション回数（デフォルトは1,000,000）
-        top_count: 第2フェーズで使用する上位パターンの数（デフォルトは10）
+        phase2_card_counts: 第2フェーズで追加でシミュレーションを行うベンチマークとなるカードカウントのリスト（デフォルトはNone）
+        top_count: 第2フェーズで使用する上位パターンの数（デフォルトは20）
+        initial_iterations: 第1フェーズのシミュレーション回数（デフォルトはDEFAULT_INITIAL_ITERATIONS）
+        final_iterations: 第2フェーズのシミュレーション回数（デフォルトはDEFAULT_ITERATIONS）
         
     Returns:
         第2フェーズのシミュレーション結果のリスト
@@ -826,7 +828,7 @@ def simulate_two_phase_combinations(analyzer: DeckAnalyzer, card_ranges: dict, t
     
     return phase2_results
 
-def simulate_main_deck_variations(analyzer: DeckAnalyzer, initial_iterations: int = 100000, final_iterations: int = DEFAULT_ITERATIONS):
+def simulate_main_deck_variations(analyzer: DeckAnalyzer, initial_iterations: int = DEFAULT_INITIAL_ITERATIONS, final_iterations: int = DEFAULT_ITERATIONS):
     """
     最適なメインデッキ（サイドボード前のデッキ）の構成を探る関数
     
@@ -863,7 +865,7 @@ def simulate_main_deck_variations(analyzer: DeckAnalyzer, initial_iterations: in
         final_iterations=final_iterations
     )
 
-def simulate_chancellor_variations(analyzer: DeckAnalyzer, initial_iterations: int = 100000, final_iterations: int = DEFAULT_ITERATIONS):
+def simulate_chancellor_variations(analyzer: DeckAnalyzer, initial_iterations: int = DEFAULT_INITIAL_ITERATIONS, final_iterations: int = DEFAULT_ITERATIONS):
     """
     Chancellorを4枚入れて他のカードを4枚抜く場合の様々な組み合わせを比較する関数
     
@@ -913,7 +915,7 @@ def simulate_chancellor_variations(analyzer: DeckAnalyzer, initial_iterations: i
         final_iterations=final_iterations
     )
 
-def simulate_chancellor_variations_against_forces(analyzer: DeckAnalyzer, initial_iterations: int = 100000, final_iterations: int = DEFAULT_ITERATIONS):
+def simulate_chancellor_variations_against_forces(analyzer: DeckAnalyzer, initial_iterations: int = DEFAULT_INITIAL_ITERATIONS, final_iterations: int = DEFAULT_ITERATIONS):
     # カードの枚数範囲を定義
     card_ranges = {
         CHANCELLOR_OF_ANNEX: [0,1,2,3,4],
