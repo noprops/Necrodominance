@@ -752,7 +752,7 @@ def simulate_card_combinations(analyzer: DeckAnalyzer, card_ranges: dict, total_
         iterations=iterations
     )
 
-def simulate_two_phase_combinations(analyzer: DeckAnalyzer, card_ranges: dict, total_cards_count: int, filename: str, opponent_has_forces: bool = False, initial_iterations: int = 100000, final_iterations: int = DEFAULT_ITERATIONS, top_count: int = 20, phase2_card_counts: list = None):
+def simulate_two_phase_combinations(analyzer: DeckAnalyzer, card_ranges: dict, total_cards_count: int, filename: str, opponent_has_forces: bool = False, phase2_card_counts: list = None, top_count: int = 20, initial_iterations: int = 100000, final_iterations: int = DEFAULT_ITERATIONS):
     """
     2段階のシミュレーションを実行する汎用関数
     
