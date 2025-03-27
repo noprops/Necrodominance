@@ -807,14 +807,24 @@ def simulate_two_phase_combinations(analyzer: DeckAnalyzer, card_ranges: dict, t
         for card, count in card_counts.items():
             print(f"  {card}: {count}")
     
-    # phase2_card_countsが存在して空でない場合は、top_card_counts_listに追加
+    # phase2_card_countsが存在して空でない場合は、top_card_counts_listに追加（重複は避ける）
     if phase2_card_counts is not None and len(phase2_card_counts) > 0:
-        print(f"\nAdding {len(phase2_card_counts)} benchmark card counts to Phase 2")
+        print(f"\nAdding benchmark card counts to Phase 2")
+        added_count = 0
         for card_count in phase2_card_counts:
+            # すでに同じカード構成がtop_card_counts_listに含まれているかチェック
+            if card_count in top_card_counts_list:
+                card_counts_str = ", ".join([f"{card}: {count}" for card, count in card_count.items()])
+                print(f"Skipping duplicate benchmark: {card_counts_str}")
+                continue
+                
             # カード構成の詳細を表示
             card_counts_str = ", ".join([f"{card}: {count}" for card, count in card_count.items()])
-            print(f"Benchmark: {card_counts_str}")
+            print(f"Adding benchmark: {card_counts_str}")
             top_card_counts_list.append(card_count)
+            added_count += 1
+            
+        print(f"Added {added_count} unique benchmark card counts to Phase 2")
     
     # 第2フェーズ：上位パターンに対してより多いイテレーション数でシミュレーション
     print(f"\n=== Phase 2: Detailed simulation with {final_iterations} iterations ===")
@@ -854,6 +864,18 @@ def simulate_main_deck_variations(analyzer: DeckAnalyzer, initial_iterations: in
         VALAKUT_AWAKENING: list(range(1, 5))  # 1~4
     }
     
+    # ベンチマークとなるカード構成を定義
+    benchmark_card_counts = [
+        {
+            GEMSTONE_MINE: 4,
+            WILD_CANTOR: 0,
+            CHROME_MOX: 4,
+            SUMMONERS_PACT: 4,
+            BORNE_UPON_WIND: 4,
+            VALAKUT_AWAKENING: 3
+        }
+    ]
+    
     # 2段階シミュレーション汎用関数を使用
     return simulate_two_phase_combinations(
         analyzer=analyzer,
@@ -861,6 +883,7 @@ def simulate_main_deck_variations(analyzer: DeckAnalyzer, initial_iterations: in
         total_cards_count=19,
         filename="simulate_main_deck_variations",
         opponent_has_forces=False,
+        phase2_card_counts=benchmark_card_counts,
         initial_iterations=initial_iterations,
         final_iterations=final_iterations
     )
@@ -904,6 +927,20 @@ def simulate_chancellor_variations(analyzer: DeckAnalyzer, initial_iterations: i
         BESEECH_MIRROR: [0, 1, 2, 3, 4]
     }
     
+    # ベンチマークとなるカード構成を定義
+    benchmark_card_counts = [
+        {
+            CHANCELLOR_OF_ANNEX: 0,
+            GEMSTONE_MINE: 4,
+            CHROME_MOX: 4,
+            SUMMONERS_PACT: 4,
+            BORNE_UPON_WIND: 4,
+            VALAKUT_AWAKENING: 3,
+            CABAL_RITUAL: 4,
+            BESEECH_MIRROR: 4
+        }
+    ]
+    
     # 2段階シミュレーション汎用関数を使用
     return simulate_two_phase_combinations(
         analyzer=analyzer,
@@ -911,11 +948,37 @@ def simulate_chancellor_variations(analyzer: DeckAnalyzer, initial_iterations: i
         total_cards_count=27,
         filename="simulate_chancellor_variations",
         opponent_has_forces=False,
+        phase2_card_counts=benchmark_card_counts,
         initial_iterations=initial_iterations,
         final_iterations=final_iterations
     )
 
 def simulate_chancellor_variations_against_forces(analyzer: DeckAnalyzer, initial_iterations: int = DEFAULT_INITIAL_ITERATIONS, final_iterations: int = DEFAULT_ITERATIONS):
+    """
+    Forceを持つ相手に対して、Chancellorの枚数を変えた場合の様々な組み合わせを比較する関数
+    
+    以下の枚数範囲で、合計27枚になるすべての組み合わせをテストします：
+    - chancellor: 0~4
+    - gemstone: 0~4
+    - chrome: 0~4
+    - summoner: 0~4
+    - wind: 3~4
+    - valakut: 0~3
+    - cabal: 0~4
+    - beseech: 0~4
+    
+    2段階のシミュレーションを実行します：
+    1. 第1フェーズ：少ないイテレーション数で多くの組み合わせをシミュレーション
+    2. 第2フェーズ：第1フェーズの結果から勝率の高い上位パターンを抽出し、より多いイテレーション数で詳細なシミュレーションを実行
+    
+    Args:
+        analyzer: DeckAnalyzerインスタンス
+        initial_iterations: 第1フェーズのシミュレーション回数（デフォルトは100,000）
+        final_iterations: 第2フェーズのシミュレーション回数（デフォルトは1,000,000）
+        
+    Returns:
+        第2フェーズのシミュレーション結果のリスト
+    """
     # カードの枚数範囲を定義
     card_ranges = {
         CHANCELLOR_OF_ANNEX: [0,1,2,3,4],
@@ -928,6 +991,20 @@ def simulate_chancellor_variations_against_forces(analyzer: DeckAnalyzer, initia
         BESEECH_MIRROR: [0, 1, 2, 3, 4]
     }
     
+    # ベンチマークとなるカード構成を定義
+    benchmark_card_counts = [
+        {
+            CHANCELLOR_OF_ANNEX: 0,
+            GEMSTONE_MINE: 4,
+            CHROME_MOX: 4,
+            SUMMONERS_PACT: 4,
+            BORNE_UPON_WIND: 4,
+            VALAKUT_AWAKENING: 3,
+            CABAL_RITUAL: 4,
+            BESEECH_MIRROR: 4
+        }
+    ]
+    
     # 2段階シミュレーション汎用関数を使用
     return simulate_two_phase_combinations(
         analyzer=analyzer,
@@ -935,6 +1012,7 @@ def simulate_chancellor_variations_against_forces(analyzer: DeckAnalyzer, initia
         total_cards_count=27,
         filename="simulate_chancellor_variations_against_forces",
         opponent_has_forces=True,
+        phase2_card_counts=benchmark_card_counts,
         initial_iterations=initial_iterations,
         final_iterations=final_iterations
     )
