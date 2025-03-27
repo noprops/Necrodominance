@@ -3,10 +3,13 @@ from deck_utils import get_filename_without_extension, create_deck, save_results
 from deck_analyzer import DeckAnalyzer
 import time
 import datetime
+import itertools
+import csv
+import os
 
 # 定数
 BEST_DECK_PATH = 'decks/gemstone4_paradise0_cantor0_chrome4_wind4_valakut3.txt'
-DEFAULT_ITERATIONS = 1000000
+DEFAULT_ITERATIONS = 10000
 
 def run_test_patterns(analyzer: DeckAnalyzer, pattern_list: list, filename: str, iterations: int = DEFAULT_ITERATIONS, sort_by_win_rate: bool = False):
     """
@@ -71,12 +74,14 @@ def run_test_patterns(analyzer: DeckAnalyzer, pattern_list: list, filename: str,
                 iterations=iterations
             )
         
-        # 結果にパターン情報を追加
-        result = stats.copy()
-        result['pattern_name'] = name
-        result['initial_hand'] = ', '.join(initial_hand) if initial_hand else 'None'
-        result['bottom_list'] = ', '.join(bottom_list) if bottom_list else 'None'
-        result['summoners_pact_strategy'] = summoners_pact_strategy
+        # 結果にパターン情報を追加（statsを直接変更）
+        stats['pattern_name'] = name
+        stats['initial_hand'] = None if not initial_hand else ', '.join(initial_hand)
+        stats['bottom_list'] = None if not bottom_list else ', '.join(bottom_list)
+        stats['summoners_pact_strategy'] = summoners_pact_strategy
+        
+        # statsを使用
+        result = stats
         
         results.append(result)
     
@@ -735,7 +740,7 @@ def simulate_mulligan_strategies(analyzer: DeckAnalyzer, deck_path: str = BEST_D
     # 最後に実行したパターンの結果を返す
     return results_2
 
-def simulate_chancellor_variations(analyzer: DeckAnalyzer, iterations: int = DEFAULT_ITERATIONS):
+def simulate_chancellor_variations(analyzer: DeckAnalyzer, iterations: int = 10000):
     """
     Chancellorを4枚入れて他のカードを4枚抜く場合の様々な組み合わせを比較する関数
     
@@ -760,14 +765,14 @@ def simulate_chancellor_variations(analyzer: DeckAnalyzer, iterations: int = DEF
     
     # カードの枚数範囲を定義
     card_ranges = {
-        CHANCELLOR_OF_ANNEX: [4],  # 固定
-        GEMSTONE_MINE: [3, 4],
+        CHANCELLOR_OF_ANNEX: [4],
+        GEMSTONE_MINE: [2, 3, 4],
         CHROME_MOX: [0, 1, 2, 3, 4],
-        SUMMONERS_PACT: [2, 3, 4],
+        SUMMONERS_PACT: [0, 1, 2, 3, 4],
         BORNE_UPON_WIND: [3, 4],
         VALAKUT_AWAKENING: [2, 3],
-        CABAL_RITUAL: [2, 3, 4],
-        BESEECH_MIRROR: [2, 3, 4]
+        CABAL_RITUAL: [1, 2, 3, 4],
+        BESEECH_MIRROR: [1, 2, 3, 4]
     }
     
     # カードとその範囲のリストを作成
@@ -798,8 +803,8 @@ def simulate_chancellor_variations(analyzer: DeckAnalyzer, iterations: int = DEF
         card_counts = combination
         deck = create_custom_deck(card_counts)
         
-        # デッキ名を作成
-        deck_name = f"CH{combination[CHANCELLOR_OF_ANNEX]}_GM{combination[GEMSTONE_MINE]}_CM{combination[CHROME_MOX]}_SP{combination[SUMMONERS_PACT]}_BW{combination[BORNE_UPON_WIND]}_VA{combination[VALAKUT_AWAKENING]}_CR{combination[CABAL_RITUAL]}_BM{combination[BESEECH_MIRROR]}"
+        # デッキ名を作成（フルネームを使用）
+        deck_name = f"Chancellor{combination[CHANCELLOR_OF_ANNEX]}_Gemstone{combination[GEMSTONE_MINE]}_Chrome{combination[CHROME_MOX]}_Summoners{combination[SUMMONERS_PACT]}_Wind{combination[BORNE_UPON_WIND]}_Valakut{combination[VALAKUT_AWAKENING]}_Cabal{combination[CABAL_RITUAL]}_Beseech{combination[BESEECH_MIRROR]}"
         
         # パターンを追加
         all_patterns.append({
@@ -835,7 +840,7 @@ def simulate_chancellor_variations(analyzer: DeckAnalyzer, iterations: int = DEF
     filename = "simulate_chancellor_variations"
     results = run_test_patterns(analyzer, all_patterns, filename, iterations, sort_by_win_rate=True)
     
-    # 各結果にカード枚数情報を追加
+    # 各結果にカード枚数情報を追加（直接resultsに追加）
     for result in results:
         pattern_name = result['pattern_name']
         for pattern in all_patterns:
@@ -868,11 +873,189 @@ def simulate_chancellor_variations(analyzer: DeckAnalyzer, iterations: int = DEF
         cabal_count = result.get(CABAL_RITUAL, 0)
         beseech_count = result.get(BESEECH_MIRROR, 0)
         
-        deck_desc = f"CH{chancellor_count}_GM{gemstone_count}_CM{chrome_count}_SP{summoner_count}_BW{wind_count}_VA{valakut_count}_CR{cabal_count}_BM{beseech_count}"
+        # フルネームを使用してデッキ説明を作成
+        deck_desc = f"Chancellor{chancellor_count}_Gemstone{gemstone_count}_Chrome{chrome_count}_Summoners{summoner_count}_Wind{wind_count}_Valakut{valakut_count}_Cabal{cabal_count}_Beseech{beseech_count}"
         print(f"Deck {i+1}: {deck_desc}, Win Rate: {result['win_rate']:.1f}%")
     
-    # 結果をCSVに保存
-    save_results_to_csv('simulate_chancellor_variations_summary', results, DEFAULT_PRIORITY_FIELDS)
+    return results
+
+def simulate_top_chancellor_variations(analyzer: DeckAnalyzer, iterations: int = 1000000):
+    """
+    simulate_chancellor_variationsの結果から、win_rateの上位20パターンに絞って、
+    より多くのイテレーションでシミュレーションを実行する関数
+    
+    Args:
+        analyzer: DeckAnalyzerインスタンス
+        iterations: シミュレーション回数（デフォルトは1,000,000）
+        
+    Returns:
+        選択された20パターンの結果のリスト
+    """
+    # 結果ファイルのパスを定義
+    results_file = "results/simulate_chancellor_variations.csv"
+    
+    # 結果ファイルが存在するか確認
+    if not os.path.exists(results_file):
+        print(f"Error: {results_file} が見つかりません。先にsimulate_chancellor_variationsを実行してください。")
+        return None
+    
+    # CSVファイルから結果を読み込む
+    all_results = []
+    with open(results_file, 'r') as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            all_results.append(row)
+    
+    # win_rateでソート（降順）
+    all_results.sort(key=lambda x: float(x['win_rate']), reverse=True)
+    
+    # 上位20パターンを取得
+    selected_patterns = all_results[:20]
+    
+    # 選択されたパターンの名前を表示
+    print(f"\n選択された上位20パターン:")
+    for i, pattern in enumerate(selected_patterns):
+        print(f"{i+1}. {pattern['pattern_name']} - Win Rate: {pattern['win_rate']}%")
+    
+    # テストパターンのリストを作成
+    all_patterns = []
+    
+    # カードの枚数範囲を定義（simulate_chancellor_variationsと同じ）
+    card_ranges = {
+        CHANCELLOR_OF_ANNEX: [4],  # 固定
+        GEMSTONE_MINE: [3, 4],
+        CHROME_MOX: [0, 1, 2, 3, 4],
+        SUMMONERS_PACT: [2, 3, 4],
+        BORNE_UPON_WIND: [3, 4],
+        VALAKUT_AWAKENING: [2, 3],
+        CABAL_RITUAL: [2, 3, 4],
+        BESEECH_MIRROR: [2, 3, 4]
+    }
+    
+    # 各選択されたパターンに対してデッキを作成
+    for pattern in selected_patterns:
+        pattern_name = pattern['pattern_name']
+        
+        # パターン名からカード枚数を抽出
+        # 例: "Chancellor4_Gemstone3_Chrome2_Summoners4_Wind3_Valakut3_Cabal4_Beseech4"
+        parts = pattern_name.split('_')
+        
+        # カード枚数の辞書を作成
+        card_counts = {}
+        
+        # Chancellorの枚数を抽出
+        chancellor_part = parts[0]  # "Chancellor4"
+        chancellor_count = int(chancellor_part[len("Chancellor"):])
+        card_counts[CHANCELLOR_OF_ANNEX] = chancellor_count
+        
+        # Gemstoneの枚数を抽出
+        gemstone_part = parts[1]  # "Gemstone3"
+        gemstone_count = int(gemstone_part[len("Gemstone"):])
+        card_counts[GEMSTONE_MINE] = gemstone_count
+        
+        # Chromeの枚数を抽出
+        chrome_part = parts[2]  # "Chrome2"
+        chrome_count = int(chrome_part[len("Chrome"):])
+        card_counts[CHROME_MOX] = chrome_count
+        
+        # Summonersの枚数を抽出
+        summoners_part = parts[3]  # "Summoners4"
+        summoners_count = int(summoners_part[len("Summoners"):])
+        card_counts[SUMMONERS_PACT] = summoners_count
+        
+        # Windの枚数を抽出
+        wind_part = parts[4]  # "Wind3"
+        wind_count = int(wind_part[len("Wind"):])
+        card_counts[BORNE_UPON_WIND] = wind_count
+        
+        # Valakutの枚数を抽出
+        valakut_part = parts[5]  # "Valakut3"
+        valakut_count = int(valakut_part[len("Valakut"):])
+        card_counts[VALAKUT_AWAKENING] = valakut_count
+        
+        # Cabalの枚数を抽出
+        cabal_part = parts[6]  # "Cabal4"
+        cabal_count = int(cabal_part[len("Cabal"):])
+        card_counts[CABAL_RITUAL] = cabal_count
+        
+        # Beseechの枚数を抽出
+        beseech_part = parts[7]  # "Beseech4"
+        beseech_count = int(beseech_part[len("Beseech"):])
+        card_counts[BESEECH_MIRROR] = beseech_count
+        
+        # デッキを作成
+        deck = create_custom_deck(card_counts)
+        
+        # パターンを追加
+        all_patterns.append({
+            'name': pattern_name,
+            'deck': deck,
+            'initial_hand': [],  # 初期手札なし
+            'bottom_list': [],
+            'summoners_pact_strategy': SummonersPactStrategy.AUTO,
+            'draw_count': 19
+        })
+    
+    # デッキの枚数とカード構成を確認
+    for pattern in all_patterns:
+        deck = pattern['deck']
+        deck_name = pattern['name']
+        print(f"Deck {deck_name}: {len(deck)} cards")
+        
+        # カードの枚数を数える
+        card_counts = {}
+        for card in deck:
+            if card in card_counts:
+                card_counts[card] += 1
+            else:
+                card_counts[card] = 1
+        
+        # 重要なカードの枚数を表示
+        important_cards = list(card_ranges.keys())
+        for card in important_cards:
+            count = card_counts.get(card, 0)
+            print(f"  {card}: {count}")
+    
+    # すべてのパターンを一度に実行
+    filename = "simulate_top_chancellor_variations"
+    results = run_test_patterns(analyzer, all_patterns, filename, iterations, sort_by_win_rate=True)
+    
+    # 各結果にカード枚数情報を追加
+    for result in results:
+        pattern_name = result['pattern_name']
+        for pattern in all_patterns:
+            if pattern['name'] == pattern_name:
+                deck = pattern['deck']
+                # カードの枚数を数える
+                card_counts = {}
+                for card in deck:
+                    if card in card_counts:
+                        card_counts[card] += 1
+                    else:
+                        card_counts[card] = 1
+                
+                # 重要なカードの枚数を結果に追加
+                important_cards = list(card_ranges.keys())
+                for card in important_cards:
+                    count = card_counts.get(card, 0)
+                    result[card] = count
+                break
+    
+    # ソート後の結果を表示
+    print("\nTop Chancellor Variations Results (sorted by win rate):")
+    for i, result in enumerate(results):
+        chancellor_count = result.get(CHANCELLOR_OF_ANNEX, 0)
+        gemstone_count = result.get(GEMSTONE_MINE, 0)
+        chrome_count = result.get(CHROME_MOX, 0)
+        summoner_count = result.get(SUMMONERS_PACT, 0)
+        wind_count = result.get(BORNE_UPON_WIND, 0)
+        valakut_count = result.get(VALAKUT_AWAKENING, 0)
+        cabal_count = result.get(CABAL_RITUAL, 0)
+        beseech_count = result.get(BESEECH_MIRROR, 0)
+        
+        # フルネームを使用してデッキ説明を作成
+        deck_desc = f"Chancellor{chancellor_count}_Gemstone{gemstone_count}_Chrome{chrome_count}_Summoners{summoner_count}_Wind{wind_count}_Valakut{valakut_count}_Cabal{cabal_count}_Beseech{beseech_count}"
+        print(f"Deck {i+1}: {deck_desc}, Win Rate: {result['win_rate']:.2f}%")
     
     return results
 
@@ -990,7 +1173,9 @@ if __name__ == "__main__":
     #simulate_deck_variations(analyzer)
     #simulate_draw_counts(analyzer)
     #simulate_initial_hands(analyzer)
-    simulate_mulligan_strategies(analyzer)
+    #simulate_mulligan_strategies(analyzer)
+    #simulate_chancellor_variations(analyzer)
+    simulate_top_chancellor_variations(analyzer)
     
     end_time = time.time()
     elapsed_time = end_time - start_time

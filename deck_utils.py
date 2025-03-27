@@ -4,7 +4,13 @@ from card_constants import *
 
 # フィールドの優先順位リスト（基本とマリガン回数ごとの統計情報を含む）
 DEFAULT_PRIORITY_FIELDS = [
-    'pattern_name', 'initial_hand', 'bottom_list', 'cast_summoners_pact', 'cast_summoners_pact_before_draw',
+    'pattern_name', 
+    # カード枚数情報（pattern_nameの直後に配置）
+    CHANCELLOR_OF_ANNEX, GEMSTONE_MINE, CHROME_MOX, SUMMONERS_PACT, 
+    BORNE_UPON_WIND, VALAKUT_AWAKENING, CABAL_RITUAL, BESEECH_MIRROR,
+    UNDISCOVERED_PARADISE, WILD_CANTOR,
+    # その他の情報
+    'initial_hand', 'bottom_list', 'cast_summoners_pact', 'cast_summoners_pact_before_draw',
     'deck_name', 'deck_type', 'kept_card', 'bottom_cards', 
     'draw_count', 'total_games', 'win_rate', 
     'cast_necro_rate', 'total_cast_necro', 'cast_necro_count', 'necro_resolve_count', 
@@ -23,9 +29,7 @@ DEFAULT_PRIORITY_FIELDS = [
     # cast_necro_mull0, cast_necro_mull1, ...
     'cast_necro_mull0', 'cast_necro_mull1', 'cast_necro_mull2', 'cast_necro_mull3', 'cast_necro_mull4',
     # win_rate_mull0, win_rate_mull1, ...
-    'win_rate_mull0', 'win_rate_mull1', 'win_rate_mull2', 'win_rate_mull3', 'win_rate_mull4',
-    # カード枚数情報
-    'GEMSTONE_MINE', 'UNDISCOVERED_PARADISE', 'WILD_CANTOR', 'CHROME_MOX', 'BORNE_UPON_WIND', 'VALAKUT_AWAKENING'
+    'win_rate_mull0', 'win_rate_mull1', 'win_rate_mull2', 'win_rate_mull3', 'win_rate_mull4'
 ]
 
 def get_filename_without_extension(file_path: str) -> str:
