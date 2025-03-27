@@ -735,94 +735,6 @@ def simulate_mulligan_strategies(analyzer: DeckAnalyzer, deck_path: str = BEST_D
     # 最後に実行したパターンの結果を返す
     return results_2
 
-def compare_chancellor_decks(analyzer: DeckAnalyzer, iterations: int = 1000000):
-    """
-    Chancellor of the Annexを4枚追加したデッキバリエーションを比較する関数
-    
-    基本デッキ: decks/wind3_valakut3_cantor0_paradise1.txt
-    - Chancellor of the Annexを4枚追加
-    - 指定されたパターンに従って4枚のカードを抜いて60枚にする
-    - 各パターンに対してcompare_decksを実行
-    """
-    # 基本デッキを読み込む
-    base_deck_path = 'decks/wind3_valakut3_cantor0_paradise1.txt'
-    base_deck = create_deck(base_deck_path)
-    
-    # Chancellor of the Annexを4枚追加
-    base_deck_with_chancellor = base_deck + [CHANCELLOR_OF_ANNEX] * 4
-    
-    # 抜くカードのパターンを定義
-    removal_patterns = [
-        [CHROME_MOX] * 4,
-        [CHROME_MOX] * 3 + [SUMMONERS_PACT] * 1,
-        [CHROME_MOX] * 2 + [SUMMONERS_PACT] * 2,
-        [CHROME_MOX] * 1 + [SUMMONERS_PACT] * 1 + [BESEECH_MIRROR] * 2,
-        [CHROME_MOX] * 1 + [SUMMONERS_PACT] * 1 + [VALAKUT_AWAKENING] * 2,
-        [CHROME_MOX] * 1 + [SUMMONERS_PACT] * 1 + [VALAKUT_AWAKENING] * 1 + [BESEECH_MIRROR] * 1,
-        [CHROME_MOX] * 1 + [SUMMONERS_PACT] * 1 + [VALAKUT_AWAKENING] * 1 + [BORNE_UPON_WIND] * 1,
-        
-        [UNDISCOVERED_PARADISE] * 1 + [CHROME_MOX] * 3,
-        [UNDISCOVERED_PARADISE] * 1 + [CHROME_MOX] * 2 + [SUMMONERS_PACT] * 1,
-        [UNDISCOVERED_PARADISE] * 1 + [CHROME_MOX] * 1 + [SUMMONERS_PACT] * 1 + [BESEECH_MIRROR] * 1,
-        [UNDISCOVERED_PARADISE] * 1 + [CHROME_MOX] * 1 + [SUMMONERS_PACT] * 1 + [VALAKUT_AWAKENING] * 1,
-        
-        [UNDISCOVERED_PARADISE] * 1 + [GEMSTONE_MINE] * 3,
-        [UNDISCOVERED_PARADISE] * 1 + [GEMSTONE_MINE] * 1 + [CHROME_MOX] * 2,
-    ]
-    
-    # 各パターンに対してデッキを作成
-    decks = []
-    deck_names = []
-    
-    for i, pattern in enumerate(removal_patterns):
-        # パターン名を作成
-        pattern_name = f"chancellor_pattern_{i+1}"
-        
-        # デッキをコピー
-        new_deck = base_deck_with_chancellor.copy()
-        
-        # カードを抜く
-        for card in pattern:
-            if card in new_deck:
-                new_deck.remove(card)
-            else:
-                print(f"Warning: Card {card} not found in deck for pattern {pattern_name}")
-        
-        # パターン名にカード情報を追加
-        card_counts = {}
-        for card in pattern:
-            if card in card_counts:
-                card_counts[card] += 1
-            else:
-                card_counts[card] = 1
-        
-        pattern_desc = "_".join([f"{count}{card.replace(' ', '_')}" for card, count in card_counts.items()])
-        pattern_name = f"chancellor_minus_{pattern_desc}"
-        
-        # デッキとデッキ名を追加
-        decks.append(new_deck)
-        deck_names.append(pattern_name)
-    
-    # デッキの枚数を確認
-    for i, deck in enumerate(decks):
-        print(f"Deck {deck_names[i]}: {len(deck)} cards")
-    
-    # 比較を実行
-    results = analyzer.compare_decks(decks, deck_names, 19, iterations)
-    
-    # win_rateの昇順でソート（最も低いものが先頭に来るように）
-    results.sort(key=lambda x: x['win_rate'])
-    
-    # ソート後の結果を表示
-    print("\nDeck Comparison Results (sorted by win rate):")
-    for result in results:
-        print(f"Deck: {result['deck_name']}, Win Rate: {result['win_rate']:.1f}%")
-    
-    # 結果をCSVに保存
-    save_results_to_csv('compare_chancellor_decks', results, DEFAULT_PRIORITY_FIELDS)
-    
-    return results
-
 def simulate_chancellor_variations(analyzer: DeckAnalyzer, iterations: int = DEFAULT_ITERATIONS):
     """
     Chancellorを4枚入れて他のカードを4枚抜く場合の様々な組み合わせを比較する関数
@@ -844,6 +756,8 @@ def simulate_chancellor_variations(analyzer: DeckAnalyzer, iterations: int = DEF
     Returns:
         各デッキバリエーションの結果のリスト
     """
+    import itertools
+    
     # カードの枚数範囲を定義
     card_ranges = {
         CHANCELLOR_OF_ANNEX: [4],  # 固定
@@ -856,33 +770,22 @@ def simulate_chancellor_variations(analyzer: DeckAnalyzer, iterations: int = DEF
         BESEECH_MIRROR: [2, 3, 4]
     }
     
+    # カードとその範囲のリストを作成
+    cards = list(card_ranges.keys())
+    ranges = list(card_ranges.values())
+    
     # すべての組み合わせを生成
     all_combinations = []
     
-    # 各カードの枚数の組み合わせを生成
-    for chancellor_count in card_ranges[CHANCELLOR_OF_ANNEX]:
-        for gemstone_count in card_ranges[GEMSTONE_MINE]:
-            for chrome_count in card_ranges[CHROME_MOX]:
-                for summoner_count in card_ranges[SUMMONERS_PACT]:
-                    for wind_count in card_ranges[BORNE_UPON_WIND]:
-                        for valakut_count in card_ranges[VALAKUT_AWAKENING]:
-                            for cabal_count in card_ranges[CABAL_RITUAL]:
-                                for beseech_count in card_ranges[BESEECH_MIRROR]:
-                                    # 合計枚数が27枚になる組み合わせのみを選択
-                                    total_count = (chancellor_count + gemstone_count + chrome_count + 
-                                                  summoner_count + wind_count + valakut_count + 
-                                                  cabal_count + beseech_count)
-                                    if total_count == 27:
-                                        all_combinations.append({
-                                            CHANCELLOR_OF_ANNEX: chancellor_count,
-                                            GEMSTONE_MINE: gemstone_count,
-                                            CHROME_MOX: chrome_count,
-                                            SUMMONERS_PACT: summoner_count,
-                                            BORNE_UPON_WIND: wind_count,
-                                            VALAKUT_AWAKENING: valakut_count,
-                                            CABAL_RITUAL: cabal_count,
-                                            BESEECH_MIRROR: beseech_count
-                                        })
+    # itertools.productを使用して、すべての組み合わせを生成
+    for counts in itertools.product(*ranges):
+        # 各カードの枚数を辞書に格納
+        card_counts = {card: count for card, count in zip(cards, counts)}
+        
+        # 合計枚数が27枚になる組み合わせのみを選択
+        total_count = sum(counts)
+        if total_count == 27:
+            all_combinations.append(card_counts)
     
     print(f"Found {len(all_combinations)} valid deck combinations with 27 cards total")
     
