@@ -9,7 +9,7 @@ import os
 
 # 定数
 BEST_DECK_PATH = 'decks/gemstone4_paradise0_cantor0_chrome4_wind4_valakut3.txt'
-DEFAULT_ITERATIONS = 10000
+DEFAULT_ITERATIONS = 1000000
 
 def run_test_patterns(analyzer: DeckAnalyzer, pattern_list: list, filename: str, iterations: int = DEFAULT_ITERATIONS, sort_by_win_rate: bool = False):
     """
@@ -53,6 +53,9 @@ def run_test_patterns(analyzer: DeckAnalyzer, pattern_list: list, filename: str,
         print(f"Summoner's Pact Strategy: {summoners_pact_strategy}")
         print(f"Draw count: {draw_count}")
         
+        # opponent_has_forcesを取得（デフォルトはFalse）
+        opponent_has_forces = pattern.get('opponent_has_forces', False)
+        
         # 初期手札が空の場合はrun_multiple_simulations_without_initial_handを使用
         if not initial_hand:
             stats = analyzer.run_multiple_simulations_without_initial_hand(
@@ -60,7 +63,7 @@ def run_test_patterns(analyzer: DeckAnalyzer, pattern_list: list, filename: str,
                 draw_count=draw_count, 
                 mulligan_until_necro=True, 
                 summoners_pact_strategy=summoners_pact_strategy, 
-                opponent_has_forces=False, 
+                opponent_has_forces=opponent_has_forces, 
                 iterations=iterations
             )
         else:
@@ -879,7 +882,7 @@ def simulate_chancellor_variations(analyzer: DeckAnalyzer, iterations: int = 100
     
     return results
 
-def simulate_top_chancellor_variations(analyzer: DeckAnalyzer, iterations: int = 1000000):
+def simulate_top_chancellor_variations(analyzer: DeckAnalyzer, iterations: int = DEFAULT_ITERATIONS):
     """
     simulate_chancellor_variationsの結果から、win_rateの上位20パターンに絞って、
     より多くのイテレーションでシミュレーションを実行する関数
