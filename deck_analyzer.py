@@ -415,36 +415,5 @@ class DeckAnalyzer:
             if all_bottom_list_empty and 'bottom_list' in result:
                 del result['bottom_list']
     
-    def compare_initial_hands(self, deck: list[str], initial_hands: list[list[str]], draw_count: int = 19, iterations: int = 10000):
-        results = []
-        
-        for initial_hand in initial_hands:
-            stats = self.run_multiple_simulations_with_initial_hand(
-                deck=deck, 
-                initial_hand=initial_hand, 
-                bottom_list=[], 
-                draw_count=draw_count, 
-                summoners_pact_strategy=SummonersPactStrategy.AUTO, 
-                iterations=iterations
-            )
-            
-            # 初期手札の内容を追加
-            stats['initial_hand'] = ', '.join(initial_hand)
-            
-            results.append(stats)
-        
-        # 不要な項目を削除
-        self._remove_unnecessary_fields(results)
-        
-        # win_rateの昇順でソート（最も低いものが先頭に来るように）
-        results.sort(key=lambda x: x['win_rate'])
-        
-        # 結果を表示
-        print("\nInitial Hand Comparison Results (sorted by win rate):")
-        for result in results:
-            print(f"Initial Hand: {result['initial_hand']}, Win Rate: {result['win_rate']:.1f}%")
-        
-        return results
-
 if __name__ == "__main__":
     analyzer = DeckAnalyzer()
