@@ -828,7 +828,6 @@ class GameState:
         self.deck.extend(cards_to_return)
         self.bottom_list = cards_to_return
     
-    # main phaseにネクロが解決した後、手札の呪文を唱える
     def _should_cast_summoners_pact(self) -> bool:
         """
         Summoner's Pactをキャストすべきかどうかを自動的に判断するメソッド
@@ -850,6 +849,9 @@ class GameState:
             ELVISH_SPIRIT_GUIDE,
             BESEECH_MIRROR
         ]
+
+        if self.did_cast_wind:
+            needed_cards.remove(BORNE_UPON_WIND)
         
         if TENDRILS_OF_AGONY in self.hand or BESEECH_MIRROR in self.hand:
             needed_cards.remove(TENDRILS_OF_AGONY)
@@ -870,6 +872,7 @@ class GameState:
         # できるだけシャッフルしないようにする、つまりFalseを返す
         return False
     
+    # main phaseにネクロが解決した後、手札の呪文を唱える
     def cast_spells_after_necro_resolved(self, summoners_pact_strategy: SummonersPactStrategy):
         # 手札のBorne Upon a Windを唱えられるなら唱える
         if BORNE_UPON_WIND in self.hand and self.try_generate_mana('1U', [BORNE_UPON_WIND]):

@@ -752,7 +752,7 @@ def simulate_card_combinations(analyzer: DeckAnalyzer, card_ranges: dict, total_
         iterations=iterations
     )
 
-def simulate_two_phase_combinations(analyzer: DeckAnalyzer, card_ranges: dict, total_cards_count: int, filename: str, opponent_has_forces: bool = False, initial_iterations: int = 100000, final_iterations: int = DEFAULT_ITERATIONS, top_count: int = 10):
+def simulate_two_phase_combinations(analyzer: DeckAnalyzer, card_ranges: dict, total_cards_count: int, filename: str, opponent_has_forces: bool = False, initial_iterations: int = 100000, final_iterations: int = DEFAULT_ITERATIONS, top_count: int = 20, phase2_card_counts: list = None):
     """
     2段階のシミュレーションを実行する汎用関数
     
@@ -804,6 +804,15 @@ def simulate_two_phase_combinations(analyzer: DeckAnalyzer, card_ranges: dict, t
         print(f"\nTop pattern: {pattern_name}, Win Rate: {result['win_rate']:.2f}%")
         for card, count in card_counts.items():
             print(f"  {card}: {count}")
+    
+    # phase2_card_countsが存在して空でない場合は、top_card_counts_listに追加
+    if phase2_card_counts is not None and len(phase2_card_counts) > 0:
+        print(f"\nAdding {len(phase2_card_counts)} benchmark card counts to Phase 2")
+        for card_count in phase2_card_counts:
+            # カード構成の詳細を表示
+            card_counts_str = ", ".join([f"{card}: {count}" for card, count in card_count.items()])
+            print(f"Benchmark: {card_counts_str}")
+            top_card_counts_list.append(card_count)
     
     # 第2フェーズ：上位パターンに対してより多いイテレーション数でシミュレーション
     print(f"\n=== Phase 2: Detailed simulation with {final_iterations} iterations ===")
