@@ -10,11 +10,11 @@ if not os.path.exists('imgs'):
 
 def plot_mulligan_stats():
     """
-    results/compare_deck_variations.csvからマリガン統計をグラフ化する関数
+    results/simulate_main_deck_variations_phase2.csvからマリガン統計をグラフ化する関数
     縦軸はマリガン回数ごとのネクロを唱えた確率（%）
     最も勝率の高いデッキに対して作成
     """
-    csv_path = 'results/compare_deck_variations.csv'
+    csv_path = 'results/simulate_main_deck_variations_phase2.csv'
     if not os.path.exists(csv_path):
         print(f"Warning: {csv_path} not found. Skipping mulligan stats plot.")
         return
