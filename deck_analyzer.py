@@ -343,7 +343,10 @@ class DeckAnalyzer:
             print(f"Necro Resolve Count: {necro_resolve_count}")
             print(f"Necro Countered Count: {necro_countered_count}")
             print(f"Necro Resolve Rate: {stats['necro_resolve_rate']:.1f}%")
-            print(f"Failed Necro Countered: {necro_countered_count} ({necro_countered_count/total_cast_necro*100:.1f}% of cast Necro)")
+            if total_cast_necro > 0:
+                print(f"Failed Necro Countered: {necro_countered_count} ({necro_countered_count/total_cast_necro*100:.1f}% of cast Necro)")
+            else:
+                print(f"Failed Necro Countered: {necro_countered_count} (0.0% of cast Necro)")
             print(f"Win After Necro Resolve Rate: {stats['win_after_necro_resolve_rate']:.1f}%")
         else:
             print(f"Win After Necro Cast Rate: {stats['win_after_necro_resolve_rate']:.1f}%")
