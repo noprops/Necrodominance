@@ -845,9 +845,8 @@ class GameState:
             VALAKUT_AWAKENING,
             BORNE_UPON_WIND,
             SIMIAN_SPIRIT_GUIDE,
-            TENDRILS_OF_AGONY,
-            ELVISH_SPIRIT_GUIDE,
-            BESEECH_MIRROR
+            BESEECH_MIRROR,
+            TENDRILS_OF_AGONY
         ]
 
         if self.did_cast_wind:

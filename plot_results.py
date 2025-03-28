@@ -109,10 +109,10 @@ def plot_mulligan_stats():
 
 def plot_draw_count_analysis():
     """
-    results/analyze_draw_counts.csvからドロー数ごとの勝率をグラフ化する関数
+    results/simulate_draw_counts.csvからドロー数ごとの勝率をグラフ化する関数
     最適なデッキ（BEST_DECK_PATH）に対して折れ線グラフを作成する
     """
-    csv_path = 'results/analyze_draw_counts.csv'
+    csv_path = 'results/simulate_draw_counts.csv'
     if not os.path.exists(csv_path):
         print(f"Warning: {csv_path} not found. Skipping draw count analysis plot.")
         return

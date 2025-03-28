@@ -1027,14 +1027,24 @@ if __name__ == "__main__":
     print("\n=== シミュレーション実行 ===")
     #simulate_summoners_pact_strategies(analyzer)
     #simulate_auto_summoners_pact_strategy(analyzer)
-    #simulate_main_deck_variations(analyzer, initial_iterations=10000, final_iterations=100000)
+    #simulate_main_deck_variations(analyzer)
     #simulate_draw_counts(analyzer)
     #simulate_initial_hands(analyzer)
     #simulate_mulligan_strategies(analyzer)
-    #simulate_chancellor_variations(analyzer)
-    simulate_chancellor_variations_against_forces(analyzer, initial_iterations=10000, final_iterations=100000)
+    simulate_chancellor_variations(analyzer)
+    simulate_chancellor_variations_against_forces(analyzer)
 
     end_time = time.time()
     elapsed_time = end_time - start_time
+    
+    # 経過時間を時間、分、秒に変換
+    hours, remainder = divmod(elapsed_time, 3600)
+    minutes, seconds = divmod(remainder, 60)
+    
     print(f"\nシミュレーション終了: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
-    print(f"経過時間: {elapsed_time:.2f}秒 ({elapsed_time/60:.2f}分)")
+    
+    # 1時間以上かかった場合は時間も表示
+    if hours > 0:
+        print(f"経過時間: {int(hours)}時間{int(minutes)}分{seconds:.2f}秒")
+    else:
+        print(f"経過時間: {elapsed_time:.2f}秒 ({elapsed_time/60:.2f}分)")
