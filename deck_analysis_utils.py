@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from game_state import *
 from deck_utils import get_filename_without_extension, create_deck, save_results_to_csv, DEFAULT_PRIORITY_FIELDS
 from deck_analyzer import DeckAnalyzer
@@ -50,7 +51,6 @@ def run_test_patterns(analyzer: DeckAnalyzer, pattern_list: list, filename: str,
         print(f"\nRunning pattern: {name}")
         print(f"Initial hand: {', '.join(initial_hand) if initial_hand else 'None'}")
         print(f"Bottom list: {', '.join(bottom_list) if bottom_list else 'None'}")
-        print(f"Summoner's Pact Strategy: {summoners_pact_strategy}")
         print(f"Draw count: {draw_count}")
         print(f"Opponent has forces: {opponent_has_forces}")
         
@@ -793,14 +793,38 @@ def simulate_two_phase_combinations(analyzer: DeckAnalyzer, card_ranges: dict, t
     top_card_counts_list = []
     for result in top_patterns:
         pattern_name = result['pattern_name']
+        print(f"Processing pattern: {pattern_name}")
         
-        # カード枚数を取得
+        # パターン名からカード構成を解析する
         card_counts = {}
-        for card in card_ranges.keys():
-            if card in result:
-                card_counts[card] = result[card]
+        for card_info in pattern_name.split('_'):
+            # 例: "Chancellor4" -> ("Chancellor", 4)
+            card_name = ''.join([c for c in card_info if not c.isdigit()])
+            count_str = ''.join([c for c in card_info if c.isdigit()])
+            if not count_str:  # 数字がない場合はスキップ
+                continue
+            count = int(count_str)
+            
+            # card_nameを完全なカード名に変換
+            full_card_name = None
+            for card in card_ranges.keys():
+                if card.split(' ')[0] == card_name:
+                    full_card_name = card
+                    break
+            
+            if full_card_name:
+                card_counts[full_card_name] = count
+                print(f"  Added {full_card_name}: {count}")
+            else:
+                print(f"  Warning: Could not find full card name for {card_name}")
         
-        top_card_counts_list.append(card_counts)
+        # カード総数を確認
+        total_count = sum(card_counts.values())
+        if total_count == total_cards_count:
+            top_card_counts_list.append(card_counts)
+            print(f"  Added pattern to phase2: total cards: {total_count}")
+        else:
+            print(f"  Warning: Skipping pattern with incorrect total count {total_count}, expected {total_cards_count}")
         
         # 上位パターンの詳細を表示
         print(f"\nTop pattern: {pattern_name}, Win Rate: {result['win_rate']:.2f}%")
@@ -1027,10 +1051,10 @@ if __name__ == "__main__":
     print("\n=== シミュレーション実行 ===")
     #simulate_summoners_pact_strategies(analyzer)
     #simulate_auto_summoners_pact_strategy(analyzer)
-    #simulate_main_deck_variations(analyzer)
-    #simulate_draw_counts(analyzer)
-    #simulate_initial_hands(analyzer)
-    #simulate_mulligan_strategies(analyzer)
+    simulate_main_deck_variations(analyzer)
+    simulate_draw_counts(analyzer)
+    simulate_initial_hands(analyzer)
+    simulate_mulligan_strategies(analyzer)
     simulate_chancellor_variations(analyzer)
     simulate_chancellor_variations_against_forces(analyzer)
 
