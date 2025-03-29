@@ -1,13 +1,13 @@
 # Necrodominance
 
-シミュレーションツールを使用してMTGのNecrodominanceデッキの最適化を行います。
+A simulation tool for optimizing MTG Necrodominance decks.
 
-## 使い方
+## Usage
 
-以下のコマンドを実行してシミュレーションを開始します：
+Run the following command to start the simulation:
 
 ```bash
 python3 run_simulations.py
 ```
 
-シミュレーション結果は`results`フォルダに保存されます。
+Simulation results will be saved in the `results` folder.
