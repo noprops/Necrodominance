@@ -962,6 +962,57 @@ def simulate_chancellor_variations(analyzer: DeckAnalyzer, initial_iterations: i
             VALAKUT_AWAKENING: 3,
             CABAL_RITUAL: 4,
             BESEECH_MIRROR: 4
+        },
+        # 最も勝率が高かった5パターンを追加
+        {
+            CHANCELLOR_OF_ANNEX: 4,
+            GEMSTONE_MINE: 3,
+            CHROME_MOX: 2,
+            SUMMONERS_PACT: 4,
+            BORNE_UPON_WIND: 4,
+            VALAKUT_AWAKENING: 2,
+            CABAL_RITUAL: 4,
+            BESEECH_MIRROR: 4
+        },
+        {
+            CHANCELLOR_OF_ANNEX: 4,
+            GEMSTONE_MINE: 4,
+            CHROME_MOX: 1,
+            SUMMONERS_PACT: 4,
+            BORNE_UPON_WIND: 4,
+            VALAKUT_AWAKENING: 2,
+            CABAL_RITUAL: 4,
+            BESEECH_MIRROR: 4
+        },
+        {
+            CHANCELLOR_OF_ANNEX: 4,
+            GEMSTONE_MINE: 2,
+            CHROME_MOX: 3,
+            SUMMONERS_PACT: 4,
+            BORNE_UPON_WIND: 3,
+            VALAKUT_AWAKENING: 3,
+            CABAL_RITUAL: 4,
+            BESEECH_MIRROR: 4
+        },
+        {
+            CHANCELLOR_OF_ANNEX: 4,
+            GEMSTONE_MINE: 4,
+            CHROME_MOX: 1,
+            SUMMONERS_PACT: 4,
+            BORNE_UPON_WIND: 3,
+            VALAKUT_AWAKENING: 3,
+            CABAL_RITUAL: 4,
+            BESEECH_MIRROR: 4
+        },
+        {
+            CHANCELLOR_OF_ANNEX: 4,
+            GEMSTONE_MINE: 3,
+            CHROME_MOX: 2,
+            SUMMONERS_PACT: 4,
+            BORNE_UPON_WIND: 3,
+            VALAKUT_AWAKENING: 3,
+            CABAL_RITUAL: 4,
+            BESEECH_MIRROR: 4
         }
     ]
     
@@ -1026,6 +1077,57 @@ def simulate_chancellor_variations_against_forces(analyzer: DeckAnalyzer, initia
             VALAKUT_AWAKENING: 3,
             CABAL_RITUAL: 4,
             BESEECH_MIRROR: 4
+        },
+        # 最も勝率が高かった5パターンを追加
+        {
+            CHANCELLOR_OF_ANNEX: 4,
+            GEMSTONE_MINE: 3,
+            CHROME_MOX: 2,
+            SUMMONERS_PACT: 4,
+            BORNE_UPON_WIND: 4,
+            VALAKUT_AWAKENING: 2,
+            CABAL_RITUAL: 4,
+            BESEECH_MIRROR: 4
+        },
+        {
+            CHANCELLOR_OF_ANNEX: 4,
+            GEMSTONE_MINE: 4,
+            CHROME_MOX: 1,
+            SUMMONERS_PACT: 4,
+            BORNE_UPON_WIND: 4,
+            VALAKUT_AWAKENING: 2,
+            CABAL_RITUAL: 4,
+            BESEECH_MIRROR: 4
+        },
+        {
+            CHANCELLOR_OF_ANNEX: 4,
+            GEMSTONE_MINE: 2,
+            CHROME_MOX: 3,
+            SUMMONERS_PACT: 4,
+            BORNE_UPON_WIND: 3,
+            VALAKUT_AWAKENING: 3,
+            CABAL_RITUAL: 4,
+            BESEECH_MIRROR: 4
+        },
+        {
+            CHANCELLOR_OF_ANNEX: 4,
+            GEMSTONE_MINE: 4,
+            CHROME_MOX: 1,
+            SUMMONERS_PACT: 4,
+            BORNE_UPON_WIND: 3,
+            VALAKUT_AWAKENING: 3,
+            CABAL_RITUAL: 4,
+            BESEECH_MIRROR: 4
+        },
+        {
+            CHANCELLOR_OF_ANNEX: 4,
+            GEMSTONE_MINE: 3,
+            CHROME_MOX: 2,
+            SUMMONERS_PACT: 4,
+            BORNE_UPON_WIND: 3,
+            VALAKUT_AWAKENING: 3,
+            CABAL_RITUAL: 4,
+            BESEECH_MIRROR: 4
         }
     ]
     
@@ -1049,8 +1151,8 @@ if __name__ == "__main__":
     
     # シミュレーション関数を実行
     print("\n=== シミュレーション実行 ===")
-    #simulate_summoners_pact_strategies(analyzer)
-    #simulate_auto_summoners_pact_strategy(analyzer)
+    simulate_summoners_pact_strategies(analyzer)
+    simulate_auto_summoners_pact_strategy(analyzer)
     simulate_main_deck_variations(analyzer)
     simulate_draw_counts(analyzer)
     simulate_initial_hands(analyzer)
